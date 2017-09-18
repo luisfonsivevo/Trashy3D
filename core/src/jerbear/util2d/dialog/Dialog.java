@@ -59,6 +59,11 @@ public abstract class Dialog
 		stage.draw();
 	}
 	
+	public static void setFocus()
+	{
+		Gdx.input.setInputProcessor(stage);
+	}
+	
 	public static boolean isDialogOpen()
 	{
 		return stage.getActors().size != 0;

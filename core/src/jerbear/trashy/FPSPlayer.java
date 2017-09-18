@@ -16,6 +16,8 @@ public class FPSPlayer extends Player implements CollisionListener
 	private static Vector3 tmp1 = new Vector3();
 	private static Vector3 tmp2 = new Vector3();
 	
+	public boolean pause;
+	
 	private boolean firstFrame = true;
 	
 	private float speed;
@@ -41,55 +43,57 @@ public class FPSPlayer extends Player implements CollisionListener
 	public void draw(ModelBatch batch, Environment env)
 	{
 		Vector3 dir = getCamera().direction;
-		
-		if(!firstFrame)
-		{
-			float xd = Gdx.input.getDeltaX() / 4f;
-			float yd = Gdx.input.getDeltaY() / 4f;
-			
-			yaw -= xd;
-			while(yaw >= 360) yaw -= 360;
-			while(yaw <  0)   yaw += 360;
-			
-			pitch = MathUtils.clamp(pitch - yd, -89.9f, 89.9f);
-			
-			dir.set(0, 0, -1);
-			dir.rotate(yaw, 0, 1, 0);
-			dir.rotate(tmp1.set(dir).crs(0, 1, 0), pitch);
-		}
-		else
-		{
-			firstFrame = false;
-			Gdx.input.setCursorCatched(true);
-			return;
-		}
-		
 		tmp2.set(0, getBody().getLinearVelocity().y, 0);
 		
-		if(Gdx.input.isKeyPressed(Keys.W))
+		if(!pause)
 		{
-			tmp1.set(dir.x, 0, dir.z).nor().scl(speed);
-			tmp2.add(tmp1);
+			if(!firstFrame)
+			{
+				float xd = Gdx.input.getDeltaX() / 4f;
+				float yd = Gdx.input.getDeltaY() / 4f;
+				
+				yaw -= xd;
+				while(yaw >= 360) yaw -= 360;
+				while(yaw <  0)   yaw += 360;
+				
+				pitch = MathUtils.clamp(pitch - yd, -89.9f, 89.9f);
+				
+				dir.set(0, 0, -1);
+				dir.rotate(yaw, 0, 1, 0);
+				dir.rotate(tmp1.set(dir).crs(0, 1, 0), pitch);
+			}
+			else
+			{
+				firstFrame = false;
+				Gdx.input.setCursorCatched(true);
+				return;
+			}
+			
+			if(Gdx.input.isKeyPressed(Keys.W))
+			{
+				tmp1.set(dir.x, 0, dir.z).nor().scl(speed);
+				tmp2.add(tmp1);
+			}
+			
+			if(Gdx.input.isKeyPressed(Keys.S))
+			{
+				tmp1.set(dir.x, 0, dir.z).nor().scl(speed);
+				tmp2.sub(tmp1);
+			}
+			
+			if(Gdx.input.isKeyPressed(Keys.A))
+			{
+				tmp1.set(0, 1, 0).crs(dir).nor().scl(speed);
+				tmp2.add(tmp1);
+			}
+			
+			if(Gdx.input.isKeyPressed(Keys.D))
+			{
+				tmp1.set(dir).crs(0, 1, 0).nor().scl(speed);;
+				tmp2.add(tmp1);
+			}
 		}
 		
-		if(Gdx.input.isKeyPressed(Keys.S))
-		{
-			tmp1.set(dir.x, 0, dir.z).nor().scl(speed);
-			tmp2.sub(tmp1);
-		}
-		
-		if(Gdx.input.isKeyPressed(Keys.A))
-		{
-			tmp1.set(0, 1, 0).crs(dir).nor().scl(speed);
-			tmp2.add(tmp1);
-		}
-		
-		if(Gdx.input.isKeyPressed(Keys.D))
-		{
-			tmp1.set(dir).crs(0, 1, 0).nor().scl(speed);;
-			tmp2.add(tmp1);
-		}
-
 		getBody().setLinearVelocity(tmp2);
 		getTransform().getTranslation(tmp2);
 		setTransform(getTransform().idt().setToTranslation(tmp2)); //delete any rotation
