@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 
 import jerbear.util3d.Player;
 import jerbear.util3d.shapes.ShapeInstance;
@@ -16,12 +17,15 @@ public class FPSPlayer extends Player implements CollisionListener
 	private static Vector3 tmp1 = new Vector3();
 	private static Vector3 tmp2 = new Vector3();
 	
+	private static int jumpTimerMax = 30;
+	
 	public boolean pause;
 	
 	private boolean firstFrame = true;
 	
 	private float speed;
 	private boolean canJump = false;
+	private boolean fly = false;
 	private int jumpTimer = 0;
 	
 	private float pitch = 0;
@@ -59,8 +63,8 @@ public class FPSPlayer extends Player implements CollisionListener
 				pitch = MathUtils.clamp(pitch - yd, -89.9f, 89.9f);
 				
 				dir.set(0, 0, -1);
-				dir.rotate(yaw, 0, 1, 0);
-				dir.rotate(tmp1.set(dir).crs(0, 1, 0), pitch);
+				dir.rotate(Vector3.Y, yaw);
+				dir.rotate(tmp1.set(dir).crs(Vector3.Y), pitch);
 			}
 			else
 			{
@@ -94,20 +98,55 @@ public class FPSPlayer extends Player implements CollisionListener
 			}
 		}
 		
-		getBody().setLinearVelocity(tmp2);
-		getTransform().getTranslation(tmp2);
+		boolean space = Gdx.input.isKeyJustPressed(Keys.SPACE);
+		if(space && jumpTimer <= 0 && !fly)
+		{
+			if(canJump)
+				getBody().applyCentralForce(tmp1.set(0, 220 * speed, 0));
+			
+			jumpTimer = jumpTimerMax;
+		}
+		else if(space && !canJump && jumpTimer > 0 && !fly)
+		{
+			fly = true;
+			getBody().setCollisionFlags(CollisionFlags.CF_KINEMATIC_OBJECT);
+			System.out.println("dong");
+		}
+		else if(space && fly && jumpTimer <= 0)
+		{
+			jumpTimer = jumpTimerMax;
+		}
+		else if(space && fly && jumpTimer > 0)
+		{
+			fly = false;
+			jumpTimer = jumpTimerMax;
+			getBody().setCollisionFlags(0);
+		}
+		
+		if(fly)
+		{
+			float dt = Gdx.graphics.getDeltaTime();
+			
+			if(Gdx.input.isKeyPressed(Keys.SPACE))
+				tmp2.y += speed;
+			
+			if(Gdx.input.isKeyPressed(Keys.SHIFT_LEFT))
+				tmp2.y -= speed;
+			
+			getTransform().getTranslation(tmp1);
+			tmp2.scl(dt * 2).add(tmp1);
+		}
+		else
+		{
+			getBody().setLinearVelocity(tmp2);
+			getTransform().getTranslation(tmp2);
+		}
+		
 		setTransform(getTransform().idt().setToTranslation(tmp2)); //delete any rotation
 		getBody().setAngularVelocity(Vector3.Zero);
 		
-		if(Gdx.input.isKeyJustPressed(Keys.SPACE) && canJump && jumpTimer <= 0)
-		{
-			getBody().applyCentralForce(tmp1.set(0, 300 * speed, 0));
-			jumpTimer = 10;
-		}
-		
 		canJump = false;
-		jumpTimer--;
-		if(jumpTimer < 0)
+		if(--jumpTimer < 0)
 			jumpTimer = 0;
 		
 		super.draw(batch, env);

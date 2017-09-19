@@ -28,7 +28,7 @@ public class Game extends ApplicationAdapter
 		VisUI.load("skin-vis-x1/uiskin.json");
 		Dialog.setSkin(Gdx.files.internal("skin-vis-x1/uiskin.json"));
 		
-		player = new FPSPlayer(0.5f, 2, 0.5f, 0, 1, 0, 1.25f, 0, 1);
+		player = new FPSPlayer(0.5f, 2, 0.5f, 0, 1, 0, 1.5f, 0, 1);
 		world = new World(player);
 		grid = new Grid(world, 5, 1);
 		menu = new EditMenu(grid);

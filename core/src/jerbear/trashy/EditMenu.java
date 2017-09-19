@@ -47,8 +47,12 @@ public class EditMenu implements Disposable
 		Menu menuShapes = new Menu("Shapes");
 		MenuItem menuShapesBox = new MenuItem("Box");
 		MenuItem menuShapesRamp = new MenuItem("Ramp");
+		MenuItem menuShapesTri = new MenuItem("Triangle");
+		MenuItem menuShapesSphere = new MenuItem("Sphere");
 		menuShapes.addItem(menuShapesBox);
 		menuShapes.addItem(menuShapesRamp);
+		menuShapes.addItem(menuShapesTri);
+		menuShapes.addItem(menuShapesSphere);
 		menuBar.addMenu(menuShapes);
 		
 		menuFileExit.addListener(new ChangeListener()
@@ -120,6 +124,24 @@ public class EditMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				grid.shapeMode = Shape.RAMP;
+			}
+		});
+		
+		menuShapesTri.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				grid.shapeMode = Shape.TRI;
+			}
+		});
+		
+		menuShapesSphere.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				grid.shapeMode = Shape.SPHERE;
 			}
 		});
 		

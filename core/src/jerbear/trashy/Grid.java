@@ -2,6 +2,7 @@ package jerbear.trashy;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Buttons;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
@@ -16,30 +17,40 @@ import com.badlogic.gdx.utils.Disposable;
 import jerbear.util3d.World;
 import jerbear.util3d.shapes.Box;
 import jerbear.util3d.shapes.Box.BoxInstance;
+import jerbear.util3d.shapes.Sphere;
+import jerbear.util3d.shapes.Sphere.SphereInstance;
+import jerbear.util3d.shapes.Triangle;
+import jerbear.util3d.shapes.Triangle.TriangleInstance;;
 
 public class Grid extends InputAdapter implements Disposable
 {
-	private static Vector3 tmpWorld = new Vector3();
-	private static Vector3 tmpScrn = new Vector3();
+	private static Vector3 tmp1 = new Vector3();
+	private static Vector3 tmp2 = new Vector3();
+	private static Vector3 tmp3 = new Vector3();
 	
 	public World world;
 	public int size;
 	public float zoom;
 	
 	public int physicsMode = CollisionFlags.CF_STATIC_OBJECT;
+	public Color color = Color.RED;
 	public Shape shapeMode = Shape.BOX;
 	
 	private ShapeRenderer rend;
 	
-	private Vector3 selected;
-	private Vector3 first;
+	private Vector3 selected = new Vector3();
+	private Vector3 first = new Vector3();
+	private Vector3 second = new Vector3();
 	
 	private boolean isSelected;
 	private boolean isFirst;
+	private boolean isSecond;
+	
+	private boolean flipFacing;
 	
 	public static enum Shape
 	{
-		BOX, RAMP
+		BOX, RAMP, TRI, SPHERE
 	}
 	
 	public Grid(World world, int size, float zoom)
@@ -72,30 +83,30 @@ public class Grid extends InputAdapter implements Disposable
 				{
 					float offset = size / 2f - 0.5f;
 					Vector3 pos = cam.position;
-					tmpWorld.set(Math.round((x - offset + pos.x) * (1f / zoom)) * zoom, Math.round((y - offset + pos.y) * (1f / zoom)) * zoom, Math.round((z - offset + pos.z) * (1f / zoom)) * zoom);
+					tmp1.set(Math.round((x - offset + pos.x) * (1f / zoom)) * zoom, Math.round((y - offset + pos.y) * (1f / zoom)) * zoom, Math.round((z - offset + pos.z) * (1f / zoom)) * zoom);
 					
-					Color shade = new Color(0, 1 - (pos.dst(tmpWorld) / 2.5f / offset), 0, 1);
+					Color shade = new Color(0, 1 - (pos.dst(tmp1) / 2.5f / offset), 0, 1);
 					
-					if(cam.frustum.pointInFrustum(tmpWorld))
+					if(cam.frustum.pointInFrustum(tmp1))
 					{
-						cam.project(tmpScrn.set(tmpWorld));
+						cam.project(tmp2.set(tmp1));
 						
-						if(center.dst(tmpScrn.x, tmpScrn.y) < 30)
+						if(center.dst(tmp2.x, tmp2.y) < 30)
 						{
 							if(!isSelected)
 							{
 								rend.setColor(Color.BLUE);
-								selected.set(tmpWorld);
+								selected.set(tmp1);
 								isSelected = true;
 							}
-							else if(selected.dst(pos) > tmpWorld.dst(pos))
+							else if(selected.dst(pos) > tmp1.dst(pos))
 							{
 								//recolor the old selected
 								rend.setColor(shade);
 								rend.box(selected.x - 0.025f, selected.y - 0.025f, selected.z + 0.025f, 0.05f, 0.05f, 0.05f);
 								
 								rend.setColor(Color.BLUE);
-								selected.set(tmpWorld);
+								selected.set(tmp1);
 								isSelected = true;
 							}
 							else
@@ -108,7 +119,7 @@ public class Grid extends InputAdapter implements Disposable
 							rend.setColor(shade);
 						}
 						
-						rend.box(tmpWorld.x - 0.025f, tmpWorld.y - 0.025f, tmpWorld.z + 0.025f, 0.05f, 0.05f, 0.05f);
+						rend.box(tmp1.x - 0.025f, tmp1.y - 0.025f, tmp1.z + 0.025f, 0.05f, 0.05f, 0.05f);
 					}
 				}
 			}
@@ -142,7 +153,84 @@ public class Grid extends InputAdapter implements Disposable
 						rend.line(first.x, first.y, selected.z, selected.x, selected.y, selected.z);
 					}
 					
-					rend.line(selected.x, selected.y, selected.z, first.x, first.y, first.z);
+					rend.line(first, selected);
+					break;
+				case TRI:
+					rend.line(first, selected);
+					if(isSecond)
+					{
+						rend.line(first, second);
+						rend.line(second, selected);
+					}
+					break;
+				case SPHERE:
+					tmp1.set(selected); //tmp1 = previous line
+					for(int i = 0; i <= 360; i += 8)
+					{
+						tmp2.set(selected).sub(first); //tmp2 = sub
+						
+						if(tmp2.x == 0 && tmp2.z == 0) //vertical selection can't be crossed
+						{
+							if(facingAxis())
+								tmp3.set(Vector3.Z);
+							else
+								tmp3.set(Vector3.X);
+						}
+						else
+						{
+							tmp3.set(Vector3.Y).crs(tmp2); //tmp3 = crs
+						}
+						
+						tmp2.rotate(tmp3, i).add(first); //rotate sub around crs to get new point
+						rend.line(tmp1.x, tmp1.y, tmp1.z, tmp2.x, tmp2.y, tmp2.z); //line from prv to new
+						tmp1.set(tmp2); //prv = new
+					}
+					
+					tmp1.set(selected).sub(first).rotate(Vector3.Y, 90).add(first);
+					for(int i = 0; i <= 360; i += 8)
+					{
+						tmp2.set(selected).sub(first); //tmp2 = sub
+						
+						if(tmp2.x == 0 && tmp2.z == 0) //vertical selection can't be crossed
+						{
+							if(facingAxis())
+								tmp3.set(Vector3.Z);
+							else
+								tmp3.set(Vector3.X);
+						}
+						else
+						{
+							tmp3.set(Vector3.Y).crs(tmp2); //tmp3 = crs
+						}
+						
+						tmp2.rotate(tmp3, i).rotate(Vector3.Y, 90).add(first); //rotate sub around crs to get new point
+						rend.line(tmp1.x, tmp1.y, tmp1.z, tmp2.x, tmp2.y, tmp2.z); //line from prv to new
+						tmp1.set(tmp2); //prv = new
+					}
+					
+					tmp1.set(selected).sub(first).rotate(Vector3.X, 90).add(first);
+					for(int i = 0; i <= 360; i += 8)
+					{
+						tmp2.set(selected).sub(first); //tmp2 = sub
+						
+						if(tmp2.x == 0 && tmp2.z == 0) //vertical selection can't be crossed
+						{
+							if(facingAxis())
+								tmp3.set(Vector3.Z);
+							else
+								tmp3.set(Vector3.X);
+						}
+						else
+						{
+							tmp3.set(Vector3.Y).crs(tmp2); //tmp3 = crs
+						}
+						
+						tmp2.rotate(tmp3, i).rotate(Vector3.X, 90).add(first); //rotate sub around crs to get new point
+						rend.line(tmp1.x, tmp1.y, tmp1.z, tmp2.x, tmp2.y, tmp2.z); //line from prv to new
+						tmp1.set(tmp2); //prv = new
+					}
+					
+					rend.line(first, selected);
 					break;
 			}
 			rend.end();
@@ -171,10 +259,18 @@ public class Grid extends InputAdapter implements Disposable
 					}
 					else
 					{
+						if(first.equals(selected))
+						{
+							isFirst = false;
+							isSecond = false;
+							break;
+						}
+						
 						switch(shapeMode)
 						{
 							case BOX:
-								new BoxInstance(new Box(world, Math.abs(selected.x - first.x), Math.abs(selected.y - first.y), Math.abs(selected.z - first.z), Color.RED), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+								new BoxInstance(new Box(world, Math.abs(selected.x - first.x), Math.abs(selected.y - first.y), Math.abs(selected.z - first.z), color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+								isFirst = false;
 								break;
 							case RAMP:
 								Vector3 top, bottom;
@@ -189,33 +285,66 @@ public class Grid extends InputAdapter implements Disposable
 									bottom = first;
 								}
 								
+								BoxInstance box;
 								if(facingAxis())
 								{
-									BoxInstance box = new BoxInstance(new Box(world, Math.abs(selected.x - first.x), 0, (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.z - first.z) * (selected.z - first.z)), Color.RED), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									box = new BoxInstance(new Box(world, Math.abs(selected.x - first.x), 0, (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.z - first.z) * (selected.z - first.z)), color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
 									if(top.z > bottom.z && top.y != bottom.y)
 										box.setTransform(box.getTransform().rotate(1, 0, 0, -45));
-									else if(top.y != bottom.y)
+									else if(top.z < bottom.z && top.y != bottom.y)
 										box.setTransform(box.getTransform().rotate(1, 0, 0, 45));
+									else if(top.z == bottom.z)
+										box.setTransform(box.getTransform().rotate(1, 0, 0, 90));
 								}
 								else
 								{
-									BoxInstance box = new BoxInstance(new Box(world, (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.x - first.x) * (selected.x - first.x)), 0, Math.abs(selected.z - first.z), Color.RED), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									box = new BoxInstance(new Box(world, (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.x - first.x) * (selected.x - first.x)), 0, Math.abs(selected.z - first.z), color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
 									if(top.x > bottom.x && top.y != bottom.y)
 										box.setTransform(box.getTransform().rotate(0, 0, 1, 45));
-									else if(top.y != bottom.y)
+									else if(top.x < bottom.x && top.y != bottom.y)
 										box.setTransform(box.getTransform().rotate(0, 0, 1, -45));
+									else if(top.x == bottom.x)
+										box.setTransform(box.getTransform().rotate(0, 0, 1, 90));
+								}
+								isFirst = false;
+								break;
+							case TRI:
+								if(!isSecond)
+								{
+									second.set(selected);
+									isSecond = true;
+								}
+								else
+								{
+									if(!second.equals(selected))
+										new TriangleInstance(new Triangle(world, first, second, selected, color), physicsMode, physicsMode == 0 ? 1 : 0);
+									
+									isFirst = false;
+									isSecond = false;
 								}
 								break;
+							case SPHERE:
+								new SphereInstance(new Sphere(world, first.dst(selected), 10, 10, color), first.x, first.y, first.z, physicsMode, physicsMode == 0 ? 1 : 0);
+								isFirst = false;
+								break;
 						}
-						
-						isFirst = false;
 					}
 				}
 				break;
 			case Buttons.RIGHT:
 				isFirst = false;
+				isSecond = false;
 				break;
 		}
+		
+		return true;
+	}
+	
+	@Override
+	public boolean keyDown(int keycode)
+	{
+		if(keycode == Keys.Q)
+			flipFacing = !flipFacing;
 		
 		return true;
 	}
@@ -245,6 +374,6 @@ public class Grid extends InputAdapter implements Disposable
 		float dir = (float) (MathUtils.radDeg * Math.atan2(-world.player.getCamera().direction.z, world.player.getCamera().direction.x));
 		if(dir < 0) dir += 360;
 		
-		return (dir > 45 && dir < 135) || (dir > 225 && dir < 315);
+		return ((dir > 45 && dir < 135) || (dir > 225 && dir < 315)) ^ flipFacing;
 	}
 }
