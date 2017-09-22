@@ -96,42 +96,44 @@ public class FPSPlayer extends Player implements CollisionListener
 				tmp1.set(dir).crs(0, 1, 0).nor().scl(speed);;
 				tmp2.add(tmp1);
 			}
-		}
-		
-		boolean space = Gdx.input.isKeyJustPressed(Keys.SPACE);
-		if(space && jumpTimer <= 0 && !fly)
-		{
-			if(canJump)
-				getBody().applyCentralForce(tmp1.set(0, 220 * speed, 0));
 			
-			jumpTimer = jumpTimerMax;
-		}
-		else if(space && !canJump && jumpTimer > 0 && !fly)
-		{
-			fly = true;
-			getBody().setCollisionFlags(CollisionFlags.CF_KINEMATIC_OBJECT);
-			System.out.println("dong");
-		}
-		else if(space && fly && jumpTimer <= 0)
-		{
-			jumpTimer = jumpTimerMax;
-		}
-		else if(space && fly && jumpTimer > 0)
-		{
-			fly = false;
-			jumpTimer = jumpTimerMax;
-			getBody().setCollisionFlags(0);
+			boolean space = Gdx.input.isKeyJustPressed(Keys.SPACE);
+			if(space && jumpTimer <= 0 && !fly)
+			{
+				if(canJump)
+					getBody().applyCentralForce(tmp1.set(0, 220 * speed, 0));
+				
+				jumpTimer = jumpTimerMax;
+			}
+			else if(space && !canJump && jumpTimer > 0 && !fly)
+			{
+				fly = true;
+				getBody().setCollisionFlags(CollisionFlags.CF_KINEMATIC_OBJECT);
+			}
+			else if(space && fly && jumpTimer <= 0)
+			{
+				jumpTimer = jumpTimerMax;
+			}
+			else if(space && fly && jumpTimer > 0)
+			{
+				fly = false;
+				jumpTimer = jumpTimerMax;
+				getBody().setCollisionFlags(0);
+			}
 		}
 		
 		if(fly)
 		{
 			float dt = Gdx.graphics.getDeltaTime();
 			
-			if(Gdx.input.isKeyPressed(Keys.SPACE))
-				tmp2.y += speed;
-			
-			if(Gdx.input.isKeyPressed(Keys.SHIFT_LEFT))
-				tmp2.y -= speed;
+			if(!pause)
+			{
+				if(Gdx.input.isKeyPressed(Keys.SPACE))
+					tmp2.y += speed;
+				
+				if(Gdx.input.isKeyPressed(Keys.SHIFT_LEFT))
+					tmp2.y -= speed;
+			}
 			
 			getTransform().getTranslation(tmp1);
 			tmp2.scl(dt * 2).add(tmp1);

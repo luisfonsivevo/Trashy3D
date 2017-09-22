@@ -49,10 +49,16 @@ public class EditMenu implements Disposable
 		MenuItem menuShapesRamp = new MenuItem("Ramp");
 		MenuItem menuShapesTri = new MenuItem("Triangle");
 		MenuItem menuShapesSphere = new MenuItem("Sphere");
+		MenuItem menuShapesCylinder = new MenuItem("Cylinder");
+		MenuItem menuShapesCone = new MenuItem("Cone");
+		MenuItem menuShapesCapsule = new MenuItem("Capsule");
 		menuShapes.addItem(menuShapesBox);
 		menuShapes.addItem(menuShapesRamp);
 		menuShapes.addItem(menuShapesTri);
 		menuShapes.addItem(menuShapesSphere);
+		menuShapes.addItem(menuShapesCylinder);
+		menuShapes.addItem(menuShapesCone);
+		menuShapes.addItem(menuShapesCapsule);
 		menuBar.addMenu(menuShapes);
 		
 		menuFileExit.addListener(new ChangeListener()
@@ -114,7 +120,7 @@ public class EditMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.shapeMode = Shape.BOX;
+				grid.setShape(Shape.BOX);
 			}
 		});
 		
@@ -123,7 +129,7 @@ public class EditMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.shapeMode = Shape.RAMP;
+				grid.setShape(Shape.RAMP);
 			}
 		});
 		
@@ -132,7 +138,7 @@ public class EditMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.shapeMode = Shape.TRI;
+				grid.setShape(Shape.TRIANGLE);
 			}
 		});
 		
@@ -141,7 +147,34 @@ public class EditMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.shapeMode = Shape.SPHERE;
+				grid.setShape(Shape.SPHERE);
+			}
+		});
+		
+		menuShapesCylinder.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				grid.setShape(Shape.CYLINDER);
+			}
+		});
+		
+		menuShapesCone.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				grid.setShape(Shape.CONE);
+			}
+		});
+		
+		menuShapesCapsule.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				grid.setShape(Shape.CAPSULE);
 			}
 		});
 		

@@ -2,6 +2,7 @@ package jerbear.trashy.desktop;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
+
 import jerbear.trashy.Game;
 
 public class DesktopLauncher

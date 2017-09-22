@@ -51,7 +51,7 @@ public class World
 	
 	private boolean disposed = false;
 	
-	public World(Player player)
+	public World(Player player, float gravity)
 	{
 		batch = new ModelBatch();
 		
@@ -68,7 +68,7 @@ public class World
 		broadphase = new btDbvtBroadphase();
 		constraintSolver = new btSequentialImpulseConstraintSolver();
 		dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, constraintSolver, collisionConfig);
-		dynamicsWorld.setGravity(new Vector3(0, -9.80665f, 0));
+		dynamicsWorld.setGravity(new Vector3(0, -gravity, 0));
 		
 		if(contactListener == null)
 			contactListener = new WorldContactListener();
