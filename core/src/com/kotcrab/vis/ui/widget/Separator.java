@@ -20,7 +20,8 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.scenes.scene2d.ui.Widget;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.kotcrab.vis.ui.VisUI;
+
+import jerbear.util2d.dialog.Dialog;
 
 /**
  * A separator widget (horizontal or vertical bar) that can be used in menus, tables or other widgets, typically added
@@ -34,11 +35,11 @@ public class Separator extends Widget {
 
 	/** New separator with default style */
 	public Separator () {
-		style = VisUI.getSkin().get(SeparatorStyle.class);
+		style = Dialog.getSkin().get(SeparatorStyle.class);
 	}
 
 	public Separator (String styleName) {
-		style = VisUI.getSkin().get(styleName, SeparatorStyle.class);
+		style = Dialog.getSkin().get(styleName, SeparatorStyle.class);
 	}
 
 	public Separator (SeparatorStyle style) {

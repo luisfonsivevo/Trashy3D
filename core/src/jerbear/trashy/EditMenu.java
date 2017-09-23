@@ -75,7 +75,7 @@ public class EditMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				System.out.println("dong");
+				
 			}
 		});
 		
@@ -179,6 +179,12 @@ public class EditMenu implements Disposable
 		});
 		
 		Dialog.addWidget(menuBar.getTable());
+	}
+	
+	public void shortcutCheck()
+	{
+		if(Gdx.input.isKeyPressed(Keys.ESCAPE))
+			Gdx.app.exit();
 	}
 	
 	@Override

@@ -79,7 +79,7 @@ public class ShapeInstance implements Disposable
 		if(modelInst != null)
 			return new Matrix4(modelInst.transform);
 		else
-			return body.getWorldTransform();
+			return new Matrix4(body.getWorldTransform());
 	}
 	
 	public Matrix4 setTransform(Matrix4 transform)

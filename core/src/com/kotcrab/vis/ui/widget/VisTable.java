@@ -18,8 +18,9 @@ package com.kotcrab.vis.ui.widget;
 
 import com.badlogic.gdx.scenes.scene2d.ui.Cell;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.kotcrab.vis.ui.VisUI;
 import com.kotcrab.vis.ui.util.TableUtils;
+
+import jerbear.util2d.dialog.Dialog;
 
 /**
  * Extends functionality of standard {@link Table}, supports setting default VisUI spacing and has utilities method for adding
@@ -29,12 +30,12 @@ import com.kotcrab.vis.ui.util.TableUtils;
  */
 public class VisTable extends Table {
 	public VisTable () {
-		super(VisUI.getSkin());
+		super(Dialog.getSkin());
 	}
 
 	/** @param setVisDefaults if true default vis spacing defaults will be set */
 	public VisTable (boolean setVisDefaults) {
-		super(VisUI.getSkin());
+		super(Dialog.getSkin());
 		if (setVisDefaults) TableUtils.setSpacingDefaults(this);
 	}
 

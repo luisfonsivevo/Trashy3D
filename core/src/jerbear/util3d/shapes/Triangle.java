@@ -115,7 +115,7 @@ public class Triangle implements Shape
 			btTriangleShape shape = null;
 			if(collisionFlags != -1)
 				shape = new btTriangleShape(v1, v2, v3);
-			System.out.println(v1);
+			
 			super.construct(world, modelInst, shape, collisionFlags, mass);
 		}
 	}

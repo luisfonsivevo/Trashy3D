@@ -18,7 +18,8 @@ package com.kotcrab.vis.ui.util;
 
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.kotcrab.vis.ui.Sizes;
-import com.kotcrab.vis.ui.VisUI;
+
+import jerbear.util2d.dialog.Dialog;
 
 /**
  * Utilities for VisTable/Table.
@@ -27,7 +28,7 @@ import com.kotcrab.vis.ui.VisUI;
 public class TableUtils {
 	/** Sets default table spacing for VisUI skin. Uses values from current skin {@link Sizes} class obtained from {@link VisUI#getSizes()}. */
 	public static void setSpacingDefaults (Table table) {
-		Sizes sizes = VisUI.getSizes();
+		Sizes sizes = Dialog.getSkin().get(Sizes.class);
 		if (sizes.spacingTop != 0) table.defaults().spaceTop(sizes.spacingTop);
 		if (sizes.spacingBottom != 0) table.defaults().spaceBottom(sizes.spacingBottom);
 		if (sizes.spacingRight != 0) table.defaults().spaceRight(sizes.spacingRight);

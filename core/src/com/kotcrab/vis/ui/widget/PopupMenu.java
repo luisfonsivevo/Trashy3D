@@ -28,8 +28,9 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.SnapshotArray;
 import com.kotcrab.vis.ui.Sizes;
-import com.kotcrab.vis.ui.VisUI;
 import com.kotcrab.vis.ui.util.ActorUtils;
+
+import jerbear.util2d.dialog.Dialog;
 
 /**
  * Standard popup menu that can be displayed anywhere on stage. Menu is automatically removed when user clicked outside menu,
@@ -66,11 +67,11 @@ public class PopupMenu extends Table {
 	}
 
 	public PopupMenu (String styleName) {
-		this(VisUI.getSkin().get(styleName, PopupMenuStyle.class));
+		this(Dialog.getSkin().get(styleName, PopupMenuStyle.class));
 	}
 
 	public PopupMenu (PopupMenuStyle style) {
-		this(VisUI.getSizes(), style);
+		this(Dialog.getSkin().get(Sizes.class), style);
 	}
 
 	public PopupMenu (Sizes sizes, PopupMenuStyle style) {

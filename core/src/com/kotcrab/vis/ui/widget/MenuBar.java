@@ -19,7 +19,8 @@ package com.kotcrab.vis.ui.widget;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Array;
-import com.kotcrab.vis.ui.VisUI;
+
+import jerbear.util2d.dialog.Dialog;
 
 /**
  * Bar with expandable menus available after pressing button, usually displayed on top of the stage.
@@ -39,7 +40,7 @@ public class MenuBar {
 	}
 
 	public MenuBar (String styleName) {
-		this(VisUI.getSkin().get(styleName, MenuBarStyle.class));
+		this(Dialog.getSkin().get(styleName, MenuBarStyle.class));
 	}
 
 	public MenuBar (MenuBarStyle style) {

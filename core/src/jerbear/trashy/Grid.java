@@ -17,12 +17,16 @@ import com.badlogic.gdx.utils.Disposable;
 import jerbear.util3d.World;
 import jerbear.util3d.shapes.Box;
 import jerbear.util3d.shapes.Box.BoxInstance;
+import jerbear.util3d.shapes.Capsule;
+import jerbear.util3d.shapes.Capsule.CapsuleInstance;
+import jerbear.util3d.shapes.Cone;
+import jerbear.util3d.shapes.Cone.ConeInstance;
 import jerbear.util3d.shapes.Cylinder;
 import jerbear.util3d.shapes.Cylinder.CylinderInstance;
 import jerbear.util3d.shapes.Sphere;
 import jerbear.util3d.shapes.Sphere.SphereInstance;
 import jerbear.util3d.shapes.Triangle;
-import jerbear.util3d.shapes.Triangle.TriangleInstance;;
+import jerbear.util3d.shapes.Triangle.TriangleInstance;
 
 public class Grid extends InputAdapter implements Disposable
 {
@@ -219,15 +223,15 @@ public class Grid extends InputAdapter implements Disposable
 					}
 					break;
 				case SPHERE:
-					float radiusLen = first.dst(selected);
+					float radiusLenSph = first.dst(selected);
 					
-					tmp1.set(first).x += radiusLen;
+					tmp1.set(first).x += radiusLenSph;
 					renderCircle(first, tmp1, 0);
 					
-					tmp1.set(first).z += radiusLen;
+					tmp1.set(first).z += radiusLenSph;
 					renderCircle(first, tmp1, 0);
 					
-					tmp1.set(first).z += radiusLen;
+					tmp1.set(first).z += radiusLenSph;
 					renderCircle(first, tmp1, 1);
 					
 					rend.line(first, selected);
@@ -242,8 +246,87 @@ public class Grid extends InputAdapter implements Disposable
 							tmp1.set(second).add(selected).sub(first); //second radius
 							renderCircle(selected, tmp1, 2);
 							
-							tmp2.set(second).sub(first).rotate(tmp3, 90).add(selected); //a point on the circle
+							tmp2.set(second).sub(first).rotate(tmp3, 90).add(selected); //point on the second circle
+							tmp1.set(tmp2).sub(selected).add(first); //matching point on the first circle
+							rend.line(tmp2, tmp1);
+							
+							tmp2.sub(selected).rotate(tmp3, 90).add(selected);
 							tmp1.set(tmp2).sub(selected).add(first);
+							rend.line(tmp2, tmp1);
+							
+							tmp2.sub(selected).rotate(tmp3, 90).add(selected);
+							tmp1.set(tmp2).sub(selected).add(first);
+							rend.line(tmp2, tmp1);
+							
+							tmp2.sub(selected).rotate(tmp3, 90).add(selected);
+							tmp1.set(tmp2).sub(selected).add(first);
+							rend.line(tmp2, tmp1);
+						}
+						
+						if(isSelected)
+							rend.line(first, selected);
+					}
+					break;
+				case CONE:
+					if((isFirst && isSelected) || isSecond)
+					{
+						renderCircle(first, isSecond ? second : selected, 2);
+						
+						if(isSecond && isSelected)
+						{
+							tmp1.set(second);
+							tmp1.sub(first).rotate(tmp3, 90).add(first); //point on the first circle
+							rend.line(selected, tmp1);
+							
+							tmp1.sub(first).rotate(tmp3, 90).add(first);
+							rend.line(selected, tmp1);
+							
+							tmp1.sub(first).rotate(tmp3, 90).add(first);
+							rend.line(selected, tmp1);
+							
+							tmp1.sub(first).rotate(tmp3, 90).add(first);
+							rend.line(selected, tmp1);
+						}
+						
+						if(isSelected)
+							rend.line(first, selected);
+					}
+					break;
+				case CAPSULE:
+					if((isFirst && isSelected) || isSecond)
+					{
+						float radiusLenCap = first.dst(isSecond ? second : selected);
+						
+						if(!isSecond || (isSecond && !isSelected))
+						{
+							renderCircle(first, isSecond ? second : selected, 2);
+						}
+						else
+						{
+							tmp1.set(first).x += radiusLenCap;
+							renderCircle(first, tmp1, 0);
+							
+							tmp1.set(first).z += radiusLenCap;
+							renderCircle(first, tmp1, 0);
+							
+							tmp1.set(first).z += radiusLenCap;
+							renderCircle(first, tmp1, 1);
+						}
+						
+						if(isSecond && isSelected)
+						{
+							tmp1.set(selected).x += radiusLenCap;
+							renderCircle(selected, tmp1, 0);
+							
+							tmp1.set(selected).z += radiusLenCap;
+							renderCircle(selected, tmp1, 0);
+							
+							tmp1.set(selected).z += radiusLenCap;
+							renderCircle(selected, tmp1, 1);
+							
+							getCrsAxis(first, second, 2);
+							tmp2.rotate(tmp3, 90).add(selected); //point on the second circle
+							tmp1.set(tmp2).sub(selected).add(first); //matching point on the first circle
 							rend.line(tmp2, tmp1);
 							
 							tmp2.sub(selected).rotate(tmp3, 90).add(selected);
@@ -267,7 +350,8 @@ public class Grid extends InputAdapter implements Disposable
 			rend.end();
 		}
 		
-		rend.setProjectionMatrix(rend.getProjectionMatrix().idt());
+		rend.getProjectionMatrix().idt();
+		rend.updateMatrices();
 		rend.begin(ShapeType.Line);
 		rend.setColor(Color.WHITE);
 		rend.line(-0.02f, 0, 0.02f, 0);
@@ -308,18 +392,6 @@ public class Grid extends InputAdapter implements Disposable
 								
 								break;
 							case RAMP: //TODO give rectangle its own shape/shapeinstance
-								Vector3 top, bottom;
-								if(first.y > selected.y)
-								{
-									top = first;
-									bottom = selected;
-								}
-								else
-								{
-									top = selected;
-									bottom = first;
-								}
-								
 								BoxInstance box;
 								if(facingAxis())
 								{
@@ -386,9 +458,16 @@ public class Grid extends InputAdapter implements Disposable
 								}
 								else
 								{
-									//TODO finish dis
-									//if(!second.equals(selected))
-										//make cone
+									float radiuscone = first.dst(second);
+									float heightcone = first.dst(selected);
+									ConeInstance cone = new ConeInstance(new Cone(world, radiuscone, heightcone, 10, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									
+									if(selected.x - first.x != 0)
+										cone.setTransform(cone.getTransform().rotate(Vector3.Z, selected.x - first.x > 0 ? -90 : 90));
+									else if(selected.z - first.z != 0)
+										cone.setTransform(cone.getTransform().rotate(Vector3.X, selected.z - first.z > 0 ? 90 : -90));
+									else if(selected.y < first.y)
+										cone.setTransform(cone.getTransform().rotate(Vector3.X, 180));
 									
 									resetPoints();
 								}
@@ -401,9 +480,14 @@ public class Grid extends InputAdapter implements Disposable
 								}
 								else
 								{
-									//TODO finish dis
-									//if(!second.equals(selected))
-										//make capsule
+									float radiuscap = first.dst(second);
+									float heightcap = first.dst(selected) + 2 * radiuscap;
+									CapsuleInstance cap = new CapsuleInstance(new Capsule(world, radiuscap, heightcap, 10, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									
+									if(selected.x - first.x != 0)
+										cap.setTransform(cap.getTransform().rotate(Vector3.Z, 90));
+									else if(selected.z - first.z != 0)
+										cap.setTransform(cap.getTransform().rotate(Vector3.X, 90));
 									
 									resetPoints();
 								}
@@ -464,7 +548,8 @@ public class Grid extends InputAdapter implements Disposable
 	{
 		rend.dispose();
 	}
-	
+
+	//TODO use position relative to selection to determine
 	//true for z, false for x
 	private boolean facingAxis()
 	{

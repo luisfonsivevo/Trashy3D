@@ -22,8 +22,9 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.kotcrab.vis.ui.VisUI;
 import com.kotcrab.vis.ui.widget.VisTextButton.VisTextButtonStyle;
+
+import jerbear.util2d.dialog.Dialog;
 
 /**
  * Menu used in {@link MenuBar}, it is a standard {@link PopupMenu} with tittle displayed in MenuBar.
@@ -42,7 +43,7 @@ public class Menu extends PopupMenu {
 	}
 
 	public Menu (String title, String styleName) {
-		this(title, VisUI.getSkin().get(styleName, MenuStyle.class));
+		this(title, Dialog.getSkin().get(styleName, MenuStyle.class));
 	}
 
 	public Menu (String title, MenuStyle style) {

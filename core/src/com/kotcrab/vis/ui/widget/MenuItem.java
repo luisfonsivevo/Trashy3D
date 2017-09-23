@@ -34,8 +34,9 @@ import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Pools;
 import com.badlogic.gdx.utils.Scaling;
 import com.kotcrab.vis.ui.Sizes;
-import com.kotcrab.vis.ui.VisUI;
 import com.kotcrab.vis.ui.util.OsUtils;
+
+import jerbear.util2d.dialog.Dialog;
 
 /**
  * MenuItem displayed in {@link Menu} and {@link PopupMenu}. MenuItem contains text or text with icon.
@@ -66,42 +67,42 @@ public class MenuItem extends Button {
 	PopupMenu containerMenu;
 
 	public MenuItem (String text) {
-		this(text, (Image) null, VisUI.getSkin().get(MenuItemStyle.class));
+		this(text, (Image) null, Dialog.getSkin().get(MenuItemStyle.class));
 	}
 
 	public MenuItem (String text, String styleName) {
-		this(text, (Image) null, VisUI.getSkin().get(styleName, MenuItemStyle.class));
+		this(text, (Image) null, Dialog.getSkin().get(styleName, MenuItemStyle.class));
 	}
 
 	public MenuItem (String text, ChangeListener changeListener) {
-		this(text, (Image) null, VisUI.getSkin().get(MenuItemStyle.class));
+		this(text, (Image) null, Dialog.getSkin().get(MenuItemStyle.class));
 		addListener(changeListener);
 	}
 
 	public MenuItem (String text, Drawable drawable) {
-		this(text, drawable, VisUI.getSkin().get(MenuItemStyle.class));
+		this(text, drawable, Dialog.getSkin().get(MenuItemStyle.class));
 	}
 
 	public MenuItem (String text, Drawable drawable, ChangeListener changeListener) {
-		this(text, drawable, VisUI.getSkin().get(MenuItemStyle.class));
+		this(text, drawable, Dialog.getSkin().get(MenuItemStyle.class));
 		addListener(changeListener);
 	}
 
 	public MenuItem (String text, Drawable drawable, String styleName) {
-		this(text, drawable, VisUI.getSkin().get(styleName, MenuItemStyle.class));
+		this(text, drawable, Dialog.getSkin().get(styleName, MenuItemStyle.class));
 	}
 
 	public MenuItem (String text, Image image) {
-		this(text, image, VisUI.getSkin().get(MenuItemStyle.class));
+		this(text, image, Dialog.getSkin().get(MenuItemStyle.class));
 	}
 
 	public MenuItem (String text, Image image, ChangeListener changeListener) {
-		this(text, image, VisUI.getSkin().get(MenuItemStyle.class));
+		this(text, image, Dialog.getSkin().get(MenuItemStyle.class));
 		addListener(changeListener);
 	}
 
 	public MenuItem (String text, Image image, String styleName) {
-		this(text, image, VisUI.getSkin().get(styleName, MenuItemStyle.class));
+		this(text, image, Dialog.getSkin().get(styleName, MenuItemStyle.class));
 	}
 
 	// Base constructors
@@ -119,8 +120,8 @@ public class MenuItem extends Button {
 	private void init (String text, Image image, MenuItemStyle style) {
 		this.style = style;
 		this.image = image;
-		setSkin(VisUI.getSkin());
-		Sizes sizes = VisUI.getSizes();
+		setSkin(Dialog.getSkin());
+		Sizes sizes = Dialog.getSkin().get(Sizes.class);
 
 		defaults().space(3);
 
