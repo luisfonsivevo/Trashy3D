@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 import com.badlogic.gdx.utils.Disposable;
 
+import jerbear.trashy.Undoable.AddShape;
 import jerbear.util3d.World;
 import jerbear.util3d.shapes.Box;
 import jerbear.util3d.shapes.Box.BoxInstance;
@@ -43,7 +44,7 @@ public class Grid extends InputAdapter implements Disposable
 	public boolean flipAxis;
 	
 	private ShapeRenderer rend;
-	private Shape shape = Shape.BOX;
+	private GridShape shape = GridShape.BOX;
 	
 	private Vector3 selected = new Vector3();
 	private Vector3 first = new Vector3();
@@ -53,9 +54,9 @@ public class Grid extends InputAdapter implements Disposable
 	private boolean isFirst;
 	private boolean isSecond;
 	
-	public static enum Shape
+	public static enum GridShape
 	{
-		BOX, RAMP, TRIANGLE, SPHERE, CYLINDER, CONE, CAPSULE
+		BOX, RAMP, WALL, TRIANGLE, SPHERE, CYLINDER, CONE, CAPSULE
 	}
 	
 	public Grid(World world, int size, float zoom)
@@ -90,7 +91,7 @@ public class Grid extends InputAdapter implements Disposable
 					Vector3 pos = cam.position;
 					tmp1.set(Math.round((x - offset + pos.x) * (1f / zoom)) * zoom, Math.round((y - offset + pos.y) * (1f / zoom)) * zoom, Math.round((z - offset + pos.z) * (1f / zoom)) * zoom);
 					
-					if(shape == Shape.CYLINDER || shape == Shape.CONE || shape == Shape.CAPSULE)
+					if(shape == GridShape.CYLINDER || shape == GridShape.CONE || shape == GridShape.CAPSULE)
 					{
 						if(isFirst && !isSecond)
 						{
@@ -186,7 +187,7 @@ public class Grid extends InputAdapter implements Disposable
 		
 		rend.end();
 		
-		if((isSelected || ((shape == Shape.CYLINDER || shape == Shape.CONE || shape == Shape.CAPSULE) && isFirst)) && isFirst)
+		if((isSelected || ((shape == GridShape.CYLINDER || shape == GridShape.CONE || shape == GridShape.CAPSULE) && isFirst)) && isFirst)
 		{
 			rend.begin(ShapeType.Line);
 			rend.setColor(Color.YELLOW);
@@ -212,6 +213,13 @@ public class Grid extends InputAdapter implements Disposable
 						rend.line(first.x, first.y, selected.z, selected.x, selected.y, selected.z);
 					}
 					
+					rend.line(first, selected);
+					break;
+				case WALL:
+					rend.line(first.x, first.y, first.z, selected.x, first.y, selected.z);
+					rend.line(selected.x, first.y, selected.z, selected.x, selected.y, selected.z);
+					rend.line(selected.x, selected.y, selected.z, first.x, selected.y, first.z);
+					rend.line(first.x, selected.y, first.z, first.x, first.y, first.z);
 					rend.line(first, selected);
 					break;
 				case TRIANGLE:
@@ -386,22 +394,58 @@ public class Grid extends InputAdapter implements Disposable
 								
 								if(width * height * depth > 0)
 								{
-									new BoxInstance(new Box(world, width, height, depth, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									BoxInstance box = new BoxInstance(new Box(world, width, height, depth, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									
+									Game.game().menu.undoAdd(new AddShape(box));
 									resetPoints();
 								}
 								
 								break;
 							case RAMP: //TODO give rectangle its own shape/shapeinstance
-								BoxInstance box;
+								BoxInstance ramp;
+								float lengthramp, pyth;
+								
 								if(facingAxis())
 								{
-									box = new BoxInstance(new Box(world, Math.abs(selected.x - first.x), 0, (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.z - first.z) * (selected.z - first.z)), color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
-									box.setTransform(box.getTransform().rotateRad(-1, 0, 0, (float) Math.atan2(selected.y - first.y, selected.z - first.z)));
+									lengthramp = Math.abs(selected.x - first.x);
+									pyth = (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.z - first.z) * (selected.z - first.z));
+									
+									if(lengthramp > 0 && pyth > 0)
+									{
+										ramp = new BoxInstance(new Box(world, lengthramp, 0, pyth, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+										ramp.setTransform(ramp.getTransform().rotateRad(-1, 0, 0, (float) Math.atan2(selected.y - first.y, selected.z - first.z)));
+										
+										Game.game().menu.undoAdd(new AddShape(ramp));
+										resetPoints();
+									}
 								}
 								else
 								{
-									box = new BoxInstance(new Box(world, (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.x - first.x) * (selected.x - first.x)), 0, Math.abs(selected.z - first.z), color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
-									box.setTransform(box.getTransform().rotateRad(0, 0, 1, (float) Math.atan2(selected.y - first.y, selected.x - first.x)));
+									lengthramp = Math.abs(selected.z - first.z);
+									pyth = (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.x - first.x) * (selected.x - first.x));
+									
+									if(lengthramp > 0 && pyth > 0)
+									{
+										ramp = new BoxInstance(new Box(world, pyth, 0, lengthramp, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+										ramp.setTransform(ramp.getTransform().rotateRad(0, 0, 1, (float) Math.atan2(selected.y - first.y, selected.x - first.x)));
+										
+										Game.game().menu.undoAdd(new AddShape(ramp));
+										resetPoints();
+									}
+								}
+								
+								break;
+							case WALL:
+								float lengthwall = Vector3.dst(first.x, first.y, first.z, selected.x, first.y, selected.z);
+								float heightwall = Math.abs(selected.y - first.y);
+								
+								if(lengthwall > 0 && heightwall > 0)
+								{
+									BoxInstance wall = new BoxInstance(new Box(world, lengthwall, heightwall, 0, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									wall.setTransform(wall.getTransform().rotateRad(Vector3.Y, (float) -Math.atan2(selected.z - first.z, selected.x - first.x)));
+									
+									Game.game().menu.undoAdd(new AddShape(wall));
+									resetPoints();
 								}
 								
 								resetPoints();
@@ -416,7 +460,9 @@ public class Grid extends InputAdapter implements Disposable
 								{
 									if(!second.equals(selected))
 									{
-										new TriangleInstance(new Triangle(world, first, second, selected, color), physicsMode, physicsMode == 0 ? 1 : 0);
+										TriangleInstance tri = new TriangleInstance(new Triangle(world, first, second, selected, color), physicsMode, physicsMode == 0 ? 1 : 0);
+										
+										Game.game().menu.undoAdd(new AddShape(tri));
 										resetPoints();
 									}
 								}
@@ -425,7 +471,9 @@ public class Grid extends InputAdapter implements Disposable
 								float radiussph = first.dst(selected);
 								if(radiussph > 0)
 								{
-									new SphereInstance(new Sphere(world, radiussph, 10, 10, color), first.x, first.y, first.z, physicsMode, physicsMode == 0 ? 1 : 0);
+									SphereInstance sphere = new SphereInstance(new Sphere(world, radiussph, 10, 10, color), first.x, first.y, first.z, physicsMode, physicsMode == 0 ? 1 : 0);
+									
+									Game.game().menu.undoAdd(new AddShape(sphere));
 									resetPoints();
 								}
 								
@@ -447,6 +495,7 @@ public class Grid extends InputAdapter implements Disposable
 									else if(selected.z - first.z != 0)
 										cyl.setTransform(cyl.getTransform().rotate(Vector3.X, 90));
 									
+									Game.game().menu.undoAdd(new AddShape(cyl));
 									resetPoints();
 								}
 								break;
@@ -469,6 +518,7 @@ public class Grid extends InputAdapter implements Disposable
 									else if(selected.y < first.y)
 										cone.setTransform(cone.getTransform().rotate(Vector3.X, 180));
 									
+									Game.game().menu.undoAdd(new AddShape(cone));
 									resetPoints();
 								}
 								break;
@@ -489,6 +539,7 @@ public class Grid extends InputAdapter implements Disposable
 									else if(selected.z - first.z != 0)
 										cap.setTransform(cap.getTransform().rotate(Vector3.X, 90));
 									
+									Game.game().menu.undoAdd(new AddShape(cap));
 									resetPoints();
 								}
 								break;
@@ -526,12 +577,12 @@ public class Grid extends InputAdapter implements Disposable
 		return true;
 	}
 	
-	public Shape getShape()
+	public GridShape getShape()
 	{
 		return shape;
 	}
 	
-	public void setShape(Shape shape)
+	public void setShape(GridShape shape)
 	{
 		this.shape = shape;
 		resetPoints();

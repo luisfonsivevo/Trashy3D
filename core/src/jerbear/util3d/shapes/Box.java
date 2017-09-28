@@ -160,22 +160,22 @@ public class Box implements Shape
 		{
 			if(shape.model == null)
 			{
-				construct(shape.world, null, shape.dim, collisionFlags, mass);
+				construct(shape.world, shape, null, shape.dim, collisionFlags, mass);
 				return;
 			}
 			
 			ModelInstance modelInst = new ModelInstance(shape.model);
 			modelInst.transform.setToTranslation(x, y, z);
-			construct(shape.world, modelInst, shape.dim, collisionFlags, mass);
+			construct(shape.world, shape, modelInst, shape.dim, collisionFlags, mass);
 		}
 		
-		private void construct(World world, ModelInstance modelInst, Vector3 dim, int collisionFlags, float mass)
+		private void construct(World world, Shape shape, ModelInstance modelInst, Vector3 dim, int collisionFlags, float mass)
 		{
-			btBoxShape shape = null;
+			btBoxShape shapeCol = null;
 			if(collisionFlags != -1)
-				shape = new btBoxShape(new Vector3(dim));
+				shapeCol = new btBoxShape(new Vector3(dim));
 			
-			super.construct(world, modelInst, shape, collisionFlags, mass);
+			super.construct(world, shape, modelInst, shapeCol, collisionFlags, mass);
 		}
 		
 		public Material getMaterial(int side)

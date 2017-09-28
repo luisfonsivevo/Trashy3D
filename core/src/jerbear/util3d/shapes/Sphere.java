@@ -114,22 +114,22 @@ public class Sphere implements Shape
 		{
 			if(shape.model == null)
 			{
-				construct(shape.world, null, shape.radius, collisionFlags, mass);
+				construct(shape.world, shape, null, shape.radius, collisionFlags, mass);
 				return;
 			}
 			
 			ModelInstance modelInst = new ModelInstance(shape.model);
 			modelInst.transform.setToTranslation(x, y, z);
-			construct(shape.world, modelInst, shape.radius, collisionFlags, mass);
+			construct(shape.world, shape, modelInst, shape.radius, collisionFlags, mass);
 		}
 		
-		private void construct(World world, ModelInstance modelInst, float radius, int collisionFlags, float mass)
+		private void construct(World world, Shape shape, ModelInstance modelInst, float radius, int collisionFlags, float mass)
 		{
-			btSphereShape shape = null;
+			btSphereShape shapeCol = null;
 			if(collisionFlags != -1)
-				shape = new btSphereShape(radius);
+				shapeCol = new btSphereShape(radius);
 			
-			super.construct(world, modelInst, shape, collisionFlags, mass);
+			super.construct(world, shape, modelInst, shapeCol, collisionFlags, mass);
 		}
 	}
 }

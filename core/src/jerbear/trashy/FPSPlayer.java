@@ -49,7 +49,9 @@ public class FPSPlayer extends Player implements CollisionListener
 		Vector3 dir = getCamera().direction;
 		tmp2.set(0, getBody().getLinearVelocity().y, 0);
 		
-		if(!pause)
+		boolean ctrlKey = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);
+		
+		if(!pause && !ctrlKey)
 		{
 			if(!firstFrame)
 			{
@@ -108,7 +110,7 @@ public class FPSPlayer extends Player implements CollisionListener
 			else if(space && !canJump && jumpTimer > 0 && !fly)
 			{
 				fly = true;
-				getBody().setCollisionFlags(CollisionFlags.CF_KINEMATIC_OBJECT);
+				getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags | CollisionFlags.CF_KINEMATIC_OBJECT);
 			}
 			else if(space && fly && jumpTimer <= 0)
 			{
@@ -118,7 +120,7 @@ public class FPSPlayer extends Player implements CollisionListener
 			{
 				fly = false;
 				jumpTimer = jumpTimerMax;
-				getBody().setCollisionFlags(0);
+				getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags);
 			}
 		}
 		
@@ -126,7 +128,7 @@ public class FPSPlayer extends Player implements CollisionListener
 		{
 			float dt = Gdx.graphics.getDeltaTime();
 			
-			if(!pause)
+			if(!pause && !ctrlKey)
 			{
 				if(Gdx.input.isKeyPressed(Keys.SPACE))
 					tmp2.y += speed;

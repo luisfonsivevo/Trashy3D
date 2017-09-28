@@ -102,21 +102,21 @@ public class Triangle implements Shape
 		{
 			if(shape.model == null)
 			{
-				construct(shape.world, null, shape.v1, shape.v2, shape.v3, collisionFlags, mass);
+				construct(shape.world, shape, null, shape.v1, shape.v2, shape.v3, collisionFlags, mass);
 				return;
 			}
 			
 			ModelInstance modelInst = new ModelInstance(shape.model);
-			construct(shape.world, modelInst, shape.v1, shape.v2, shape.v3, collisionFlags, mass);
+			construct(shape.world, shape, modelInst, shape.v1, shape.v2, shape.v3, collisionFlags, mass);
 		}
 		
-		private void construct(World world, ModelInstance modelInst, Vector3 v1, Vector3 v2, Vector3 v3, int collisionFlags, float mass)
+		private void construct(World world, Shape shape, ModelInstance modelInst, Vector3 v1, Vector3 v2, Vector3 v3, int collisionFlags, float mass)
 		{
-			btTriangleShape shape = null;
+			btTriangleShape shapeCol = null;
 			if(collisionFlags != -1)
-				shape = new btTriangleShape(v1, v2, v3);
+				shapeCol = new btTriangleShape(v1, v2, v3);
 			
-			super.construct(world, modelInst, shape, collisionFlags, mass);
+			super.construct(world, shape, modelInst, shapeCol, collisionFlags, mass);
 		}
 	}
 }

@@ -3,22 +3,37 @@ package jerbear.trashy;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.physics.bullet.Bullet;
-import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 
 import jerbear.util2d.dialog.Dialog;
 import jerbear.util3d.World;
-import jerbear.util3d.shapes.Box;
-import jerbear.util3d.shapes.Box.BoxInstance;
 
 public class Game extends ApplicationAdapter
 {
-	private World world;
+	private static Game singleton;
+	
+	public EditorMenu menu;
+	public World world;
+	
 	private FPSPlayer player;
 	
 	private Grid grid;
-	private EditMenu menu;
+	
+	public static Game launch()
+	{
+		if(singleton != null)
+			singleton.dispose();
+		
+		singleton = new Game();
+		return singleton;
+	}
+	
+	public static Game game()
+	{
+		return singleton;
+	}
+	
+	private Game() {}
 	
 	@Override
 	public void create()
@@ -29,11 +44,10 @@ public class Game extends ApplicationAdapter
 		player = new FPSPlayer(0.5f, 2, 0.5f, 0, 1, 0, 1.5f, 0, 1);
 		world = new World(player, 15);
 		grid = new Grid(world, 5, 1);
-		menu = new EditMenu(grid);
+		menu = new EditorMenu(grid);
 		
 		Gdx.input.setInputProcessor(grid);
-		
-		new BoxInstance(new Box(world, 2, 1, 2, Color.RED), 0, -0.5f, 0, CollisionFlags.CF_STATIC_OBJECT, 0);
+		menu.newf(true);
 	}
 	
 	@Override

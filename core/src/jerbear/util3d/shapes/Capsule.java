@@ -111,23 +111,23 @@ public class Capsule implements Shape
 		{
 			if(shape.model == null)
 			{
-				construct(shape.world, null, shape.radius, shape.height, collisionFlags, mass);
+				construct(shape.world, shape, null, shape.radius, shape.height, collisionFlags, mass);
 				return;
 			}
 			
 			ModelInstance modelInst = new ModelInstance(shape.model);
 			modelInst.transform.setToTranslation(x, y, z);
-			construct(shape.world, modelInst, shape.radius, shape.height, collisionFlags, mass);
+			construct(shape.world, shape, modelInst, shape.radius, shape.height, collisionFlags, mass);
 		}
 		
-		private void construct(World world, ModelInstance modelInst, float radius, float height, int collisionFlags, float mass)
+		private void construct(World world, Shape shape, ModelInstance modelInst, float radius, float height, int collisionFlags, float mass)
 		{
-			btCapsuleShape shape = null;
+			btCapsuleShape shapeCol = null;
 			if(collisionFlags != -1)
 				//Bullet only counts height of the cylinder, so subtract off the hemispheres
-				shape = new btCapsuleShape(radius, height - 2 * radius);
+				shapeCol = new btCapsuleShape(radius, height - 2 * radius);
 			
-			super.construct(world, modelInst, shape, collisionFlags, mass);
+			super.construct(world, shape, modelInst, shapeCol, collisionFlags, mass);
 		}
 	}
 }

@@ -17,43 +17,53 @@ import jerbear.util3d.World;
 
 public class ShapeInstance implements Disposable
 {
+	public static final int defaultCollisionFlags = 8;
+	
 	private static Vector3 tmp = new Vector3();
 	private static int curID = 0;
 	
 	private boolean disposed = false;
-	private int collisionFlags;
+	private float mass;
 	private int id;
 	
+	private boolean isModel;
+	private boolean isCollision;
+	
+	private Shape shape;
 	private ModelInstance modelInst;
-	private btCollisionShape shape;
+	private btCollisionShape colShape;
 	private btRigidBodyConstructionInfo constructionInfo;
 	private btRigidBody body;
 	private MotionState motionState;
 	
 	private CollisionListener collisionListener;
 	
-	protected final void construct(World world, ModelInstance modelInst, btCollisionShape shape, int collisionFlags, float mass)
+	protected final void construct(World world, Shape shape, ModelInstance modelInst, btCollisionShape colShape, int collisionFlags, float mass)
 	{
+		this.shape = shape;
 		this.modelInst = modelInst;
-		this.collisionFlags = collisionFlags;
+		this.mass = mass;
 		this.id = curID++;
 		
-		if(collisionFlags != -1)
+		isModel = modelInst != null;
+		isCollision = collisionFlags != -1;
+		
+		if(isCollision)
 		{
-			this.shape = shape;
+			this.colShape = colShape;
 			
 			if (mass > 0f)
-				shape.calculateLocalInertia(mass, tmp);
+				colShape.calculateLocalInertia(mass, tmp);
 			else
 				tmp.set(0, 0, 0);
 			
-			constructionInfo = new btRigidBody.btRigidBodyConstructionInfo(mass, null, shape, tmp);
+			constructionInfo = new btRigidBodyConstructionInfo(mass, null, colShape, tmp);
 			
 			body = new btRigidBody(constructionInfo);
 			body.setUserValue(id);
-			body.setCollisionFlags(body.getCollisionFlags() | collisionFlags | CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
+			body.setCollisionFlags(collisionFlags | CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
 			
-			if(modelInst != null)
+			if(isModel)
 			{
 				motionState = new MotionState(modelInst.transform);
 				body.setMotionState(motionState);
@@ -84,10 +94,10 @@ public class ShapeInstance implements Disposable
 	
 	public Matrix4 setTransform(Matrix4 transform)
 	{
-		if(modelInst != null)
+		if(isModel)
 			modelInst.transform.set(transform);
 		
-		if(body != null)
+		if(isCollision)
 		{
 			body.setActivationState(Collision.ACTIVE_TAG);
 			body.proceedToTransform(transform);
@@ -112,14 +122,34 @@ public class ShapeInstance implements Disposable
 		setTransform(getTransform().setToTranslation(x, y, z));
 	}
 	
+	public final float getMass()
+	{
+		return mass;
+	}
+	
 	public final int getID()
 	{
 		return id;
 	}
 	
+	public boolean isModel()
+	{
+		return isModel;
+	}
+	
+	public boolean isCollision()
+	{
+		return isCollision;
+	}
+	
 	public final btRigidBody getBody()
 	{
 		return body;
+	}
+	
+	public Shape getShape()
+	{
+		return shape;
 	}
 	
 	public final ModelInstance getInstance()
@@ -146,7 +176,7 @@ public class ShapeInstance implements Disposable
 	@Override
 	public void dispose()
 	{
-		if(collisionFlags == -1)
+		if(!isCollision)
 			return;
 		
 		body.dispose();
@@ -155,7 +185,7 @@ public class ShapeInstance implements Disposable
 			motionState.dispose();
 		
 		constructionInfo.dispose();
-		shape.dispose();
+		colShape.dispose();
 	}
 	
 	public static interface CollisionListener
