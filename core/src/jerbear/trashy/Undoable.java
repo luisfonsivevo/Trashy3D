@@ -18,6 +18,8 @@ import jerbear.util3d.shapes.Cone;
 import jerbear.util3d.shapes.Cone.ConeInstance;
 import jerbear.util3d.shapes.Cylinder;
 import jerbear.util3d.shapes.Cylinder.CylinderInstance;
+import jerbear.util3d.shapes.Rectangle;
+import jerbear.util3d.shapes.Rectangle.RectangleInstance;
 import jerbear.util3d.shapes.Shape;
 import jerbear.util3d.shapes.ShapeInstance;
 import jerbear.util3d.shapes.Sphere;
@@ -98,14 +100,19 @@ public interface Undoable
 						inst = new CylinderInstance(new Cylinder(world, widthcyl, heightcyl, depthcyl, 10, col), 0, 0, 0, colFlags, mass);
 						break;
 					case 4:
+						float widthrect = buf.getFloat();
+						float depthrect = buf.getFloat();
+						inst = new RectangleInstance(new Rectangle(world, widthrect, depthrect, col), 0, 0, 0, colFlags, mass);
+						break;
+					case 5:
 						float radiussph = buf.getFloat();
 						inst = new SphereInstance(new Sphere(world, radiussph, 10, 10, col), 0, 0, 0, colFlags, mass);
 						break;
-					case 5:
+					case 6:
 						Vector3 v1 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
 						Vector3 v2 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
 						Vector3 v3 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
-						inst = new TriangleInstance(new Triangle(world, v1, v2, v3, col), colFlags, mass);
+						inst = new TriangleInstance(new Triangle(world, v1, v2, v3, col), 0, 0, 0, colFlags, mass);
 						break;
 					default:
 						throw new IllegalArgumentException("Invalid shape ID: " + type);
@@ -202,15 +209,23 @@ public interface Undoable
 				buf.putFloat(tmp1.y);
 				buf.putFloat(tmp1.z);
 			}
-			else if(shape instanceof Sphere)
+			else if(shape instanceof Rectangle)
 			{
 				buf.put((byte) 4);
+				Rectangle dim = (Rectangle) shape;
+				dim.getDimensions(tmp1);
+				buf.putFloat(tmp1.x);
+				buf.putFloat(tmp1.z);
+			}
+			else if(shape instanceof Sphere)
+			{
+				buf.put((byte) 5);
 				Sphere dim = (Sphere) shape;
 				buf.putFloat(dim.getRadius());
 			}
 			else if(shape instanceof Triangle)
 			{
-				buf.put((byte) 5);
+				buf.put((byte) 6);
 				Triangle dim = (Triangle) shape;
 				
 				dim.getPoint(tmp1, 0);
@@ -227,6 +242,10 @@ public interface Undoable
 				buf.putFloat(tmp1.x);
 				buf.putFloat(tmp1.y);
 				buf.putFloat(tmp1.z);
+			}
+			else
+			{
+				throw new IllegalArgumentException("Can't serialize shape: " + shape.getClass().getName());
 			}
 			
 			byte[] returnVal = new byte[buf.position()];

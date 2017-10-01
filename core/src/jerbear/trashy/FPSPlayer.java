@@ -51,7 +51,7 @@ public class FPSPlayer extends Player implements CollisionListener
 		
 		boolean ctrlKey = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);
 		
-		if(!pause && !ctrlKey)
+		if(!pause)
 		{
 			if(!firstFrame)
 			{
@@ -75,59 +75,60 @@ public class FPSPlayer extends Player implements CollisionListener
 				return;
 			}
 			
-			if(Gdx.input.isKeyPressed(Keys.W))
+			if(!ctrlKey)
 			{
-				tmp1.set(dir.x, 0, dir.z).nor().scl(speed);
-				tmp2.add(tmp1);
-			}
-			
-			if(Gdx.input.isKeyPressed(Keys.S))
-			{
-				tmp1.set(dir.x, 0, dir.z).nor().scl(speed);
-				tmp2.sub(tmp1);
-			}
-			
-			if(Gdx.input.isKeyPressed(Keys.A))
-			{
-				tmp1.set(0, 1, 0).crs(dir).nor().scl(speed);
-				tmp2.add(tmp1);
-			}
-			
-			if(Gdx.input.isKeyPressed(Keys.D))
-			{
-				tmp1.set(dir).crs(0, 1, 0).nor().scl(speed);;
-				tmp2.add(tmp1);
-			}
-			
-			boolean space = Gdx.input.isKeyJustPressed(Keys.SPACE);
-			if(space && jumpTimer <= 0 && !fly)
-			{
-				if(canJump)
-					getBody().applyCentralForce(tmp1.set(0, 220 * speed, 0));
+				if(Gdx.input.isKeyPressed(Keys.W))
+				{
+					tmp1.set(dir.x, 0, dir.z).nor().scl(speed);
+					tmp2.add(tmp1);
+				}
 				
-				jumpTimer = jumpTimerMax;
-			}
-			else if(space && !canJump && jumpTimer > 0 && !fly)
-			{
-				fly = true;
-				getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags | CollisionFlags.CF_KINEMATIC_OBJECT);
-			}
-			else if(space && fly && jumpTimer <= 0)
-			{
-				jumpTimer = jumpTimerMax;
-			}
-			else if(space && fly && jumpTimer > 0)
-			{
-				fly = false;
-				jumpTimer = jumpTimerMax;
-				getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags);
+				if(Gdx.input.isKeyPressed(Keys.S))
+				{
+					tmp1.set(dir.x, 0, dir.z).nor().scl(speed);
+					tmp2.sub(tmp1);
+				}
+				
+				if(Gdx.input.isKeyPressed(Keys.A))
+				{
+					tmp1.set(0, 1, 0).crs(dir).nor().scl(speed);
+					tmp2.add(tmp1);
+				}
+				
+				if(Gdx.input.isKeyPressed(Keys.D))
+				{
+					tmp1.set(dir).crs(0, 1, 0).nor().scl(speed);;
+					tmp2.add(tmp1);
+				}
+				
+				boolean space = Gdx.input.isKeyJustPressed(Keys.SPACE);
+				if(space && jumpTimer <= 0 && !fly)
+				{
+					if(canJump)
+						getBody().applyCentralForce(tmp1.set(0, 220 * speed, 0));
+					
+					jumpTimer = jumpTimerMax;
+				}
+				else if(space && !canJump && jumpTimer > 0 && !fly)
+				{
+					fly = true;
+					getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags | CollisionFlags.CF_KINEMATIC_OBJECT);
+				}
+				else if(space && fly && jumpTimer <= 0)
+				{
+					jumpTimer = jumpTimerMax;
+				}
+				else if(space && fly && jumpTimer > 0)
+				{
+					fly = false;
+					jumpTimer = jumpTimerMax;
+					getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags);
+				}
 			}
 		}
 		
 		if(fly)
 		{
-			float dt = Gdx.graphics.getDeltaTime();
-			
 			if(!pause && !ctrlKey)
 			{
 				if(Gdx.input.isKeyPressed(Keys.SPACE))
@@ -138,7 +139,7 @@ public class FPSPlayer extends Player implements CollisionListener
 			}
 			
 			getTransform().getTranslation(tmp1);
-			tmp2.scl(dt * 2).add(tmp1);
+			tmp2.scl(Gdx.graphics.getDeltaTime() * 2).add(tmp1);
 		}
 		else
 		{

@@ -21,17 +21,21 @@ import com.kotcrab.vis.ui.widget.MenuItem;
 import jerbear.trashy.Grid.GridShape;
 import jerbear.trashy.Undoable.AddShape;
 import jerbear.util2d.dialog.Dialog;
+import jerbear.util2d.dialog.ExceptionDialog;
 import jerbear.util3d.shapes.Box;
 import jerbear.util3d.shapes.Box.BoxInstance;
 
 public class EditorMenu implements Disposable
 {
-	public File save = new File("test.t3d");
+	public File save;
 	
 	private MenuBar menuBar;
 	private LinkedList<Undoable> undos = new LinkedList<Undoable>();
 	
-	private MenuItem menuEditUndo; //keep a reference for enabling/disabling
+	//keep references for enabling/disabling
+	private MenuItem menuFileSave;
+	private MenuItem menuEditUndo;
+	private int asterisk = 0;
 	
 	public EditorMenu(Grid grid)
 	{
@@ -41,7 +45,7 @@ public class EditorMenu implements Disposable
 		Menu menuFile = new Menu("File");
 		MenuItem menuFileNew = new MenuItem("New").setShortcut(Keys.CONTROL_LEFT, Keys.N);
 		MenuItem menuFileOpen = new MenuItem("Open").setShortcut(Keys.CONTROL_LEFT, Keys.O);
-		MenuItem menuFileSave = new MenuItem("Save").setShortcut(Keys.CONTROL_LEFT, Keys.S);
+		menuFileSave = new MenuItem("Save").setShortcut(Keys.CONTROL_LEFT, Keys.S);
 		MenuItem menuFileSaveAs = new MenuItem("Save As...").setShortcut(Keys.CONTROL_LEFT, Keys.SHIFT_LEFT, Keys.S);
 		MenuItem menuFileExit = new MenuItem("Exit").setShortcut(Keys.ESCAPE);
 		menuFile.addItem(menuFileNew);
@@ -270,6 +274,26 @@ public class EditorMenu implements Disposable
 		if(Gdx.input.isKeyJustPressed(Keys.ESCAPE))
 			Gdx.app.exit();
 	}
+
+	public void newf(boolean firstBox)
+	{
+		while(!undos.isEmpty())
+			undo();
+		
+		if(firstBox)
+		{
+			undoAdd(new AddShape(new BoxInstance(new Box(Game.game().world, 2, 1, 2, Color.RED), 0, -0.5f, 0, CollisionFlags.CF_STATIC_OBJECT, 0)));
+			Gdx.graphics.setTitle("Trashy 3D - *(Untitled)");
+		}
+		else
+		{
+			Gdx.graphics.setTitle("Trashy 3D - (Untitled)");
+			menuFileSave.setDisabled(true);
+		}
+		
+		asterisk = 0;
+		save = new File("test.t3d"); //TODO file save/open dialogs - this should be null
+	}
 	
 	public void open()
 	{
@@ -300,21 +324,25 @@ public class EditorMenu implements Disposable
 		}
 		catch(IOException oops)
 		{
-			//TODO show exception dialog
+			new ExceptionDialog(oops, "Failed to load " + save.getName()).open();
+			
+			Dialog.setFocus();
+			Gdx.input.setCursorCatched(false);
+			Game.game().player.pause = true;
+			
+			newf(true);
 		}
-	}
-	
-	public void newf(boolean firstBox)
-	{
-		while(!undos.isEmpty())
-			undo();
 		
-		if(firstBox)
-			undoAdd(new AddShape(new BoxInstance(new Box(Game.game().world, 2, 1, 2, Color.RED), 0, -0.5f, 0, CollisionFlags.CF_STATIC_OBJECT, 0)));
+		asterisk = undos.size();
+		Gdx.graphics.setTitle("Trashy 3D - " + save.getName());
+		menuFileSave.setDisabled(true);
 	}
 	
 	public void save()
 	{
+		if(menuFileSave.isDisabled())
+			return;
+		
 		try
 		{
 			DataOutputStream stream = new DataOutputStream(new FileOutputStream(save));
@@ -327,14 +355,27 @@ public class EditorMenu implements Disposable
 		}
 		catch(IOException oops)
 		{
-			//TODO show exception dialog
+			new ExceptionDialog(oops, "Failed to save " + save.getName()).open();
+			
+			Dialog.setFocus();
+			Gdx.input.setCursorCatched(false);
+			Game.game().player.pause = true;
 		}
+		
+		asterisk = undos.size();
+		Gdx.graphics.setTitle("Trashy 3D - " + save.getName());
+		menuFileSave.setDisabled(true);
 	}
 	
 	public void undoAdd(Undoable undo)
 	{
 		undos.add(undo);
 		menuEditUndo.setDisabled(false);
+		
+		Gdx.graphics.setTitle("Trashy 3D - *" + (save == null ? "(Untitled)" : save.getName()));
+		menuFileSave.setDisabled(false);
+		if(undos.size() == asterisk)
+			asterisk = -1;
 	}
 	
 	public void undo()
@@ -342,6 +383,17 @@ public class EditorMenu implements Disposable
 		undos.getLast().undo();
 		undos.removeLast();
 		menuEditUndo.setDisabled(undos.isEmpty());
+		
+		if(undos.size() == asterisk)
+		{
+			Gdx.graphics.setTitle("Trashy 3D - " + (save == null ? "(Untitled)" : save.getName()));
+			menuFileSave.setDisabled(true);
+		}
+		else
+		{
+			Gdx.graphics.setTitle("Trashy 3D - *" + (save == null ? "(Untitled)" : save.getName()));
+			menuFileSave.setDisabled(false);
+		}
 	}
 	
 	@Override

@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.Collision;
-import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody;
 import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody.btRigidBodyConstructionInfo;
@@ -61,7 +60,7 @@ public class ShapeInstance implements Disposable
 			
 			body = new btRigidBody(constructionInfo);
 			body.setUserValue(id);
-			body.setCollisionFlags(collisionFlags | CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK);
+			body.setCollisionFlags(collisionFlags | defaultCollisionFlags);
 			
 			if(isModel)
 			{

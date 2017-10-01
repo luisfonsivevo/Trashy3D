@@ -14,8 +14,7 @@ public class Game extends ApplicationAdapter
 	
 	public EditorMenu menu;
 	public World world;
-	
-	private FPSPlayer player;
+	public FPSPlayer player;
 	
 	private Grid grid;
 	

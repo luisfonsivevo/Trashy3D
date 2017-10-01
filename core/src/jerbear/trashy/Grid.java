@@ -24,6 +24,8 @@ import jerbear.util3d.shapes.Cone;
 import jerbear.util3d.shapes.Cone.ConeInstance;
 import jerbear.util3d.shapes.Cylinder;
 import jerbear.util3d.shapes.Cylinder.CylinderInstance;
+import jerbear.util3d.shapes.Rectangle;
+import jerbear.util3d.shapes.Rectangle.RectangleInstance;
 import jerbear.util3d.shapes.Sphere;
 import jerbear.util3d.shapes.Sphere.SphereInstance;
 import jerbear.util3d.shapes.Triangle;
@@ -401,8 +403,8 @@ public class Grid extends InputAdapter implements Disposable
 								}
 								
 								break;
-							case RAMP: //TODO give rectangle its own shape/shapeinstance
-								BoxInstance ramp;
+							case RAMP:
+								RectangleInstance ramp;
 								float lengthramp, pyth;
 								
 								if(facingAxis())
@@ -412,7 +414,7 @@ public class Grid extends InputAdapter implements Disposable
 									
 									if(lengthramp > 0 && pyth > 0)
 									{
-										ramp = new BoxInstance(new Box(world, lengthramp, 0, pyth, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+										ramp = new RectangleInstance(new Rectangle(world, lengthramp, pyth, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
 										ramp.setTransform(ramp.getTransform().rotateRad(-1, 0, 0, (float) Math.atan2(selected.y - first.y, selected.z - first.z)));
 										
 										Game.game().menu.undoAdd(new AddShape(ramp));
@@ -426,7 +428,7 @@ public class Grid extends InputAdapter implements Disposable
 									
 									if(lengthramp > 0 && pyth > 0)
 									{
-										ramp = new BoxInstance(new Box(world, pyth, 0, lengthramp, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+										ramp = new RectangleInstance(new Rectangle(world, pyth, lengthramp, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
 										ramp.setTransform(ramp.getTransform().rotateRad(0, 0, 1, (float) Math.atan2(selected.y - first.y, selected.x - first.x)));
 										
 										Game.game().menu.undoAdd(new AddShape(ramp));
@@ -441,8 +443,8 @@ public class Grid extends InputAdapter implements Disposable
 								
 								if(lengthwall > 0 && heightwall > 0)
 								{
-									BoxInstance wall = new BoxInstance(new Box(world, lengthwall, heightwall, 0, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
-									wall.setTransform(wall.getTransform().rotateRad(Vector3.Y, (float) -Math.atan2(selected.z - first.z, selected.x - first.x)));
+									RectangleInstance wall = new RectangleInstance(new Rectangle(world, lengthwall, heightwall, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									wall.setTransform(wall.getTransform().rotate(Vector3.X, 90).rotateRad(Vector3.Z, (float) Math.atan2(selected.z - first.z, selected.x - first.x)));
 									
 									Game.game().menu.undoAdd(new AddShape(wall));
 									resetPoints();
@@ -460,7 +462,9 @@ public class Grid extends InputAdapter implements Disposable
 								{
 									if(!second.equals(selected))
 									{
-										TriangleInstance tri = new TriangleInstance(new Triangle(world, first, second, selected, color), physicsMode, physicsMode == 0 ? 1 : 0);
+										tmp1.set(first).add(second).add(selected).scl(1 / 3f); //offset by the centroid to give the triangle a center of rotation
+										TriangleInstance tri = new TriangleInstance(new Triangle(world, first.sub(tmp1), second.sub(tmp1), selected.sub(tmp1), color), 0, 0, 0, physicsMode, physicsMode == 0 ? 1 : 0);
+										tri.setTransform(tri.getTransform().translate(tmp1));
 										
 										Game.game().menu.undoAdd(new AddShape(tri));
 										resetPoints();
@@ -616,7 +620,6 @@ public class Grid extends InputAdapter implements Disposable
 	}
 	
 	//warning: uses all 3 tmp vectors (safe to pass tmp1 as radius)
-	//mode: 0 = normal, 1 = xz plane, 2 = cylinder
 	private void renderCircle(Vector3 center, Vector3 radius, int mode)
 	{
 		tmp1.set(radius); //tmp1 = previous line
@@ -632,6 +635,7 @@ public class Grid extends InputAdapter implements Disposable
 	}
 	
 	//sets tmp2 to radius - center, tmp3 to perpendicular vector
+	//mode: 0 = normal, 1 = xz plane, 2 = cylinder
 	private void getCrsAxis(Vector3 center, Vector3 radius, int mode)
 	{
 		tmp2.set(radius).sub(center);

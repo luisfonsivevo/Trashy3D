@@ -2,11 +2,14 @@ package jerbear.util3d.shapes;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
+import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder.VertexInfo;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btTriangleShape;
@@ -15,6 +18,9 @@ import jerbear.util3d.World;
 
 public class Triangle implements Shape
 {
+	public static final int SIDE_BOTTOM = 0;
+	public static final int SIDE_TOP = 1;
+	
 	private static boolean init = false;
 	private static ModelBuilder modelBuilder;
 	
@@ -30,10 +36,22 @@ public class Triangle implements Shape
 	
 	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3)
 	{
-		this(world, v1, v2, v3, null);
+		this(world, v1, v2, v3, nullMat());
 	}
 	
-	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Color col)
+	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Color colMat)
+	{
+		this(world, v1, v2, v3, new Material(ColorAttribute.createDiffuse(colMat)));
+	}
+	
+	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Texture texMat, boolean manageTex)
+	{
+		this(world, v1, v2, v3, new Material(TextureAttribute.createDiffuse(texMat)));
+		if(manageTex)
+			model.manageDisposable(texMat);
+	}
+	
+	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Material mat)
 	{
 		if(!init) init();
 		this.v1 = new Vector3(v1);
@@ -41,12 +59,30 @@ public class Triangle implements Shape
 		this.v3 = new Vector3(v3);
 		this.world = world;
 		
-		if(col == null)
+		if(mat == null)
 			return;
 		
+		VertexInfo vinf1 = new VertexInfo();
+		vinf1.position.set(v3).sub(v1); //dirty haxx - use pos as a tmp vector for calculating the normal
+		vinf1.setNor(v2).normal.sub(v1).crs(vinf1.position).nor();
+		vinf1.setPos(v1);
+		
+		VertexInfo vinf2 = new VertexInfo();
+		vinf2.setNor(vinf1.normal);
+		vinf2.setPos(v2);
+		
+		VertexInfo vinf3 = new VertexInfo();
+		vinf3.setNor(vinf1.normal);
+		vinf3.setPos(v3);
+		
 		modelBuilder.begin();
-		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(col))).triangle(v1, Color.WHITE, v2, Color.WHITE, v3, Color.WHITE);
-		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(col))).triangle(v3, Color.WHITE, v2, Color.WHITE, v1, Color.WHITE);
+		modelBuilder.part("tri", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).triangle(vinf1, vinf2, vinf3);
+		
+		vinf1.normal.scl(-1);
+		vinf2.normal.scl(-1);
+		vinf3.normal.scl(-1);
+		
+		modelBuilder.part("tri", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).triangle(vinf3, vinf2, vinf1);
 		model = modelBuilder.end();
 		
 		if(world != null)
@@ -91,14 +127,19 @@ public class Triangle implements Shape
 		return mat;
 	}
 	
+	private static Material nullMat()
+	{
+		return null;
+	}
+	
 	public static class TriangleInstance extends ShapeInstance
 	{
-		public TriangleInstance(Triangle shape)
+		public TriangleInstance(Triangle shape, float x, float y, float z)
 		{
-			this(shape, -1, 0);
+			this(shape, x, y, z, -1, 0);
 		}
 		
-		public TriangleInstance(Triangle shape, int collisionFlags, float mass)
+		public TriangleInstance(Triangle shape, float x, float y, float z, int collisionFlags, float mass)
 		{
 			if(shape.model == null)
 			{
@@ -107,6 +148,7 @@ public class Triangle implements Shape
 			}
 			
 			ModelInstance modelInst = new ModelInstance(shape.model);
+			modelInst.transform.setToTranslation(x, y, z);
 			construct(shape.world, shape, modelInst, shape.v1, shape.v2, shape.v3, collisionFlags, mass);
 		}
 		
