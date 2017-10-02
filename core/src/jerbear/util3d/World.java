@@ -49,8 +49,6 @@ public class World
 	private btBroadphaseInterface broadphase;
 	private btConstraintSolver constraintSolver;
 	
-	private boolean disposed = false;
-	
 	public World(Player player, float gravity)
 	{
 		batch = new ModelBatch();
@@ -103,15 +101,14 @@ public class World
 		batch.begin(player.getCamera());
 		while(iter.hasNext())
 		{
-			if(disposed)
-				return; //abandon ship
-			
 			ShapeInstance shape = (ShapeInstance) iter.next();
 			
 			shape.draw(batch, env);
 			if(shape.isDisposed())
 			{
-				dynamicsWorld.removeRigidBody(shape.getBody());
+				if(shape.isCollision())
+					dynamicsWorld.removeRigidBody(shape.getBody());
+				
 				shape.dispose();
 				iter.remove();
 			}
@@ -218,13 +215,7 @@ public class World
 		for(ShapeInstance shape : shapes)
 			shape.dispose();
 		
-		disposables.clear();
-		shapes.clear();
-		shapesAdd.clear();
-		
 		batch.dispose();
-		
-		disposed = true;
 	}
 	
 	private static class WorldContactListener extends ContactListener

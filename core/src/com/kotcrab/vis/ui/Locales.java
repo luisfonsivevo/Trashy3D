@@ -39,7 +39,7 @@ public class Locales {
 
 	/** Returns common I18N bundle. If current bundle is null, a default bundle is set and returned */
 	public static I18NBundle getCommonBundle () {
-		if (commonBundle == null) commonBundle = getBundle("skin-vis-x1/Common");
+		if (commonBundle == null) commonBundle = getBundle("skin-vis-x1/i18n/Common");
 		return commonBundle;
 	}
 
@@ -53,7 +53,7 @@ public class Locales {
 
 	/** Returns I18N bundle used by {@link FileChooser}, if current bundle is null, a default bundle is set and returned */
 	public static I18NBundle getFileChooserBundle () {
-		if (fileChooserBundle == null) fileChooserBundle = getBundle("skin-vis-x1/FileChooser");
+		if (fileChooserBundle == null) fileChooserBundle = getBundle("skin-vis-x1/i18n/FileChooser");
 		return fileChooserBundle;
 	}
 
@@ -67,7 +67,7 @@ public class Locales {
 
 	/** Returns I18N bundle used by {@link Dialogs}, if current bundle is null, a default bundle is set and returned */
 	public static I18NBundle getDialogsBundle () {
-		if (dialogsBundle == null) dialogsBundle = getBundle("skin-vis-x1/Dialogs");
+		if (dialogsBundle == null) dialogsBundle = getBundle("skin-vis-x1/i18n/Dialogs");
 		return dialogsBundle;
 	}
 
@@ -81,7 +81,7 @@ public class Locales {
 
 	/** Returns I18N bundle used by {@link TabbedPane}, if current bundle is null, a default bundle is set and returned */
 	public static I18NBundle getTabbedPaneBundle () {
-		if (tabbedPaneBundle == null) tabbedPaneBundle = getBundle("skin-vis-x1/TabbedPane");
+		if (tabbedPaneBundle == null) tabbedPaneBundle = getBundle("skin-vis-x1/i18n/TabbedPane");
 		return tabbedPaneBundle;
 	}
 
@@ -95,7 +95,7 @@ public class Locales {
 
 	/** Returns I18N bundle used by {@link ColorPicker}, if current bundle is null, a default bundle is set and returned */
 	public static I18NBundle getColorPickerBundle () {
-		if (colorPickerBundle == null) colorPickerBundle = getBundle("skin-vis-x1/ColorPicker");
+		if (colorPickerBundle == null) colorPickerBundle = getBundle("skin-vis-x1/i18n/ColorPicker");
 		return colorPickerBundle;
 	}
 
@@ -109,7 +109,7 @@ public class Locales {
 
 	/** Returns I18N bundle used by {@link ButtonBar}, if current bundle is null, a default bundle is set and returned */
 	public static I18NBundle getButtonBarBundle () {
-		if (buttonBarBundle == null) buttonBarBundle = getBundle("skin-vis-x1/ButtonBar");
+		if (buttonBarBundle == null) buttonBarBundle = getBundle("skin-vis-x1/i18n/ButtonBar");
 		return buttonBarBundle;
 	}
 

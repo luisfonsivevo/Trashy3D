@@ -9,13 +9,14 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 
 public abstract class YesNoDialog extends Dialog
 {
-	public YesNoDialog(String title, String question)
+	public YesNoDialog(String title, String question, boolean hasCancel)
 	{
 		super(title);
 		
 		Label label = new Label(question, Dialog.getSkin());
 		TextButton yes = new TextButton("Yes", Dialog.getSkin());
 		TextButton no = new TextButton("No", Dialog.getSkin());
+		TextButton cancel = new TextButton("Cancel", Dialog.getSkin());
 		
 		final Window window = getWindow();
 		
@@ -28,6 +29,7 @@ public abstract class YesNoDialog extends Dialog
 		window.add().prefWidth(window.getWidth() / 4f);
 		window.add(yes);
 		window.add(no);
+		if(hasCancel) window.add(cancel);
 		
 		window.setSize(Math.min(Gdx.graphics.getWidth() - 50, window.getPrefWidth()), window.getPrefHeight());
 		
@@ -37,7 +39,7 @@ public abstract class YesNoDialog extends Dialog
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				close();
-				onClose(true);
+				onClose(1);
 			}
 		});
 		
@@ -47,10 +49,21 @@ public abstract class YesNoDialog extends Dialog
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				close();
-				onClose(false);
+				onClose(0);
+			}
+		});
+		
+		cancel.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				close();
+				onClose(-1);
 			}
 		});
 	}
 	
-	public abstract void onClose(boolean answer);
+	//-1 = cancel, 0 = no, 1 = yes
+	public abstract void onClose(int answer);
 }

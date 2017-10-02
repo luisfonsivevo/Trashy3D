@@ -16,8 +16,7 @@ public class Game extends ApplicationAdapter
 	public EditorMenu menu;
 	public World world;
 	public FPSPlayer player;
-	
-	private Grid grid;
+	public Grid grid;
 	
 	public static Game launch()
 	{
@@ -45,10 +44,10 @@ public class Game extends ApplicationAdapter
 		player = new FPSPlayer(0.5f, 2, 0.5f, 0, 1, 0, 1.5f, 0, 1);
 		world = new World(player, 15);
 		grid = new Grid(world, 5, 1);
-		menu = new EditorMenu(grid);
+		menu = new EditorMenu();
 		
 		Gdx.input.setInputProcessor(grid);
-		menu.newf(true);
+		menu.newf(true, true);
 	}
 	
 	@Override

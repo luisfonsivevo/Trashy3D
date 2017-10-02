@@ -50,7 +50,7 @@ public class EditorMenu implements Disposable
 	
 	private boolean dialogOpen;
 	
-	public EditorMenu(Grid grid)
+	public EditorMenu()
 	{
 		menuBar = new MenuBar();
 		menuBar.getTable().setPosition(0, Gdx.graphics.getHeight() - 12);
@@ -113,7 +113,7 @@ public class EditorMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				newf(true);
+				newf(true, false);
 			}
 		});
 		
@@ -122,7 +122,7 @@ public class EditorMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				openDialog();
+				openDialog(false);
 			}
 		});
 		
@@ -131,7 +131,7 @@ public class EditorMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				save();
+				save(null);
 			}
 		});
 		
@@ -140,7 +140,7 @@ public class EditorMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				saveAs();
+				saveAs(null);
 			}
 		});
 		
@@ -173,7 +173,7 @@ public class EditorMenu implements Disposable
 			}
 		});
 		
-		
+		Grid grid = Game.game().grid;
 		
 		menuPhysicsDis.addListener(new ChangeListener()
 		{
@@ -294,19 +294,19 @@ public class EditorMenu implements Disposable
 		boolean shift = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT);
 		
 		if(ctrl && Gdx.input.isKeyJustPressed(Keys.N))
-			newf(true);
+			newf(true, false);
 		
 		if(Gdx.input.isKeyJustPressed(Keys.ESCAPE))
 			exit();
 		
 		if(ctrl && Gdx.input.isKeyJustPressed(Keys.O))
-			openDialog();
+			openDialog(false);
 		
 		if(ctrl && !shift && Gdx.input.isKeyJustPressed(Keys.S) && !menuFileSave.isDisabled())
-			save();
+			save(null);
 		
 		if(ctrl && shift && Gdx.input.isKeyJustPressed(Keys.S))
-			saveAs();
+			saveAs(null);
 		
 		if(ctrl && !shift && Gdx.input.isKeyJustPressed(Keys.Z) && !undos.isEmpty())
 			undo();
@@ -315,83 +315,162 @@ public class EditorMenu implements Disposable
 			redo();
 	}
 	
-	public void newf(boolean firstBox)
+	public void newf(boolean firstBox, boolean force)
 	{
-		while(!undos.isEmpty())
-			undo();
-		
-		if(firstBox)
-			save = null;
-		
-		redos.clear();
-		
-		if(firstBox)
+		if(menuFileSave.isDisabled() || force)
 		{
-			undoAdd(new AddShape(new BoxInstance(new Box(Game.game().world, 2, 1, 2, Color.RED), 0, -0.5f, 0, CollisionFlags.CF_STATIC_OBJECT, 0)));
-			Gdx.graphics.setTitle("Trashy 3D - *(Untitled)");
+			while(!undos.isEmpty())
+				undo();
+			
+			if(firstBox)
+				save = null; //TODO messy
+			
+			redos.clear();
+			
+			if(firstBox)
+			{
+				undoAdd(new AddShape(new BoxInstance(new Box(Game.game().world, 2, 1, 2, Color.RED), 0, -0.5f, 0, CollisionFlags.CF_STATIC_OBJECT, 0)));
+				Gdx.graphics.setTitle("*(Untitled) - Trashy 3D");
+			}
+			else
+			{
+				Gdx.graphics.setTitle("(Untitled) - Trashy 3D");
+				menuFileSave.setDisabled(true);
+			}
+			
+			asterisk = 0;
 		}
 		else
 		{
-			Gdx.graphics.setTitle("Trashy 3D - (Untitled)");
-			menuFileSave.setDisabled(true);
+			popup(new YesNoDialog("Trashy3D", "Save changes to \"" + (save == null ? "Untitled" : save.getName()) + "\"", true)
+			{
+				@Override
+				public void onClose(int answer)
+				{
+					dialogOpen = false;
+					
+					if(answer == 0)
+					{
+						newf(firstBox, true);
+					}
+					else if(answer == 1)
+					{
+						save(new SaveEvent()
+						{
+							@Override
+							public void onSave()
+							{
+								newf(firstBox, true);
+							}
+						});
+					}
+				}
+			});
 		}
-		
-		asterisk = 0;
 	}
 	
 	public void exit()
 	{
-		popup(new YesNoDialog("Trashy3D", "Exit without saving?")
+		if(menuFileSave.isDisabled())
 		{
-			@Override
-			public void onClose(boolean answer)
+			Gdx.app.exit();
+		}
+		else
+		{
+			popup(new YesNoDialog("Trashy3D", "Save changes to \"" + (save == null ? "Untitled" : save.getName()) + "\"", true)
 			{
-				dialogOpen = false;
-				
-				if(answer)
-					Gdx.app.exit();
-			}
-		});
+				@Override
+				public void onClose(int answer)
+				{
+					dialogOpen = false;
+					
+					if(answer == 0)
+					{
+						Gdx.app.exit();
+					}
+					else if(answer == 1)
+					{
+						save(new SaveEvent()
+						{
+							@Override
+							public void onSave()
+							{
+								Gdx.app.exit();
+							}
+						});
+					}
+				}
+			});
+		}
 	}
 	
-	public void openDialog()
+	public void openDialog(boolean force)
 	{
-		FileTypeFilter filter = new FileTypeFilter(true);
-		filter.addRule("Trashy3D files (*.t3d)", "t3d");
-		
-		FileChooser chooser = new FileChooser(Mode.OPEN);
-		chooser.setSelectionMode(SelectionMode.FILES);
-		chooser.setMultiSelectionEnabled(false);
-		chooser.setFileTypeFilter(filter);
-		chooser.getTitleLabel().setText("Open file");
-		
-		chooser.setListener(new FileChooserAdapter()
+		if(menuFileSave.isDisabled() || force)
 		{
-			@Override
-			public void selected(Array<FileHandle> file)
-			{
-				dialogOpen = false;
-				save = file.get(0).file();
-				openFile();
-			}
+			FileTypeFilter filter = new FileTypeFilter(true);
+			filter.addRule("Trashy3D files (*.t3d)", "t3d");
 			
-			@Override
-			public void canceled()
+			FileChooser chooser = new FileChooser(Mode.OPEN);
+			chooser.setSelectionMode(SelectionMode.FILES);
+			chooser.setMultiSelectionEnabled(false);
+			chooser.setFileTypeFilter(filter);
+			chooser.getTitleLabel().setText("Open file");
+			
+			chooser.setListener(new FileChooserAdapter()
 			{
-				dialogOpen = false;
-			}
-		});
-		
-		popup(chooser);
+				@Override
+				public void selected(Array<FileHandle> file)
+				{
+					dialogOpen = false;
+					openFile(file.get(0).file());
+				}
+				
+				@Override
+				public void canceled()
+				{
+					dialogOpen = false;
+				}
+			});
+			
+			popup(chooser);
+		}
+		else
+		{
+			popup(new YesNoDialog("Trashy3D", "Save changes to \"" + (save == null ? "Untitled" : save.getName()) + "\"", true)
+			{
+				@Override
+				public void onClose(int answer)
+				{
+					dialogOpen = false;
+					
+					if(answer == 0)
+					{
+						openDialog(true);
+					}
+					else if(answer == 1)
+					{
+						save(new SaveEvent()
+						{
+							@Override
+							public void onSave()
+							{
+								openDialog(true);
+							}
+						});
+					}
+				}
+			});
+		}
 	}
 	
-	public void openFile()
+	public void openFile(File file)
 	{
-		newf(false);
+		newf(false, true);
 		
 		try
 		{
-			byte[] data = Files.readAllBytes(save.toPath());
+			byte[] data = Files.readAllBytes(file.toPath());
 			int remaining = data.length;
 			
 			while(remaining > 0)
@@ -411,20 +490,21 @@ public class EditorMenu implements Disposable
 				remaining -= serialization.length;
 				System.arraycopy(data, serialization.length, data, 0, remaining);
 				
-				Gdx.graphics.setTitle("Trashy 3D - " + save.getName());
+				save = file;
+				Gdx.graphics.setTitle(save.getName() + " - Trashy 3D");
 			}
 		}
 		catch(IOException oops)
 		{
-			popup(new ExceptionDialog(oops, "Failed to open " + save.getName()));
-			newf(true);
+			popup(new ExceptionDialog(oops, "Failed to open " + file.getName()));
+			newf(true, true);
 		}
 		
 		asterisk = undos.size();
 		menuFileSave.setDisabled(true);
 	}
 	
-	public void saveAs()
+	public void saveAs(SaveEvent event)
 	{
 		FileTypeFilter filter = new FileTypeFilter(true);
 		filter.addRule("Trashy3D files (*.t3d)", "t3d");
@@ -441,7 +521,7 @@ public class EditorMenu implements Disposable
 			{
 				dialogOpen = false;
 				save = file.get(0).file();
-				save();
+				save(event);
 			}
 			
 			@Override
@@ -454,11 +534,11 @@ public class EditorMenu implements Disposable
 		popup(chooser);
 	}
 	
-	public void save()
+	public void save(SaveEvent event)
 	{
 		if(save == null)
 		{
-			saveAs();
+			saveAs(event);
 			return;
 		}
 		
@@ -472,7 +552,7 @@ public class EditorMenu implements Disposable
 			
 			stream.close();
 
-			Gdx.graphics.setTitle("Trashy 3D - " + save.getName());
+			Gdx.graphics.setTitle(save.getName() + " - Trashy 3D");
 		}
 		catch(IOException oops)
 		{
@@ -481,6 +561,9 @@ public class EditorMenu implements Disposable
 		
 		asterisk = undos.size();
 		menuFileSave.setDisabled(true);
+		
+		if(event != null)
+			event.onSave();
 	}
 	
 	public void undoAdd(Undoable undo)
@@ -490,7 +573,7 @@ public class EditorMenu implements Disposable
 		menuEditUndo.setDisabled(false);
 		menuEditRedo.setDisabled(true);
 		
-		Gdx.graphics.setTitle("Trashy 3D - *" + (save == null ? "(Untitled)" : save.getName()));
+		Gdx.graphics.setTitle("*" + (save == null ? "(Untitled)" : save.getName()) + " - Trashy 3D");
 		menuFileSave.setDisabled(false);
 		if(undos.size() == asterisk)
 			asterisk = -1;
@@ -506,12 +589,12 @@ public class EditorMenu implements Disposable
 		
 		if(undos.size() == asterisk)
 		{
-			Gdx.graphics.setTitle("Trashy 3D - " + (save == null ? "(Untitled)" : save.getName()));
+			Gdx.graphics.setTitle((save == null ? "(Untitled)" : save.getName()) + " - Trashy 3D");
 			menuFileSave.setDisabled(true);
 		}
 		else
 		{
-			Gdx.graphics.setTitle("Trashy 3D - *" + (save == null ? "(Untitled)" : save.getName()));
+			Gdx.graphics.setTitle("*" + (save == null ? "(Untitled)" : save.getName()) + " - Trashy 3D");
 			menuFileSave.setDisabled(false);
 		}
 	}
@@ -526,12 +609,12 @@ public class EditorMenu implements Disposable
 		
 		if(undos.size() == asterisk)
 		{
-			Gdx.graphics.setTitle("Trashy 3D - " + (save == null ? "(Untitled)" : save.getName()));
+			Gdx.graphics.setTitle((save == null ? "(Untitled)" : save.getName()) + " - Trashy 3D");
 			menuFileSave.setDisabled(true);
 		}
 		else
 		{
-			Gdx.graphics.setTitle("Trashy 3D - *" + (save == null ? "(Untitled)" : save.getName()));
+			Gdx.graphics.setTitle("*" + (save == null ? "(Untitled)" : save.getName()) + " - Trashy 3D");
 			menuFileSave.setDisabled(false);
 		}
 	}
@@ -566,5 +649,10 @@ public class EditorMenu implements Disposable
 		Gdx.input.setCursorCatched(false);
 		Game.game().player.pause = true;
 		dialogOpen = true;
+	}
+	
+	public static interface SaveEvent
+	{
+		public void onSave();
 	}
 }
