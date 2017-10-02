@@ -31,7 +31,7 @@ public class Capsule implements Shape
 	
 	public Capsule(World world, float radius, float height)
 	{
-		this(world, radius, height, 0, nullMat());
+		this(world, radius, height, 0, (Material) null);
 	}
 	
 	public Capsule(World world, float radius, float height, int div, Color colMat)
@@ -93,11 +93,6 @@ public class Capsule implements Shape
 	{
 		model.nodes.get(0).parts.get(0).material = mat;
 		return mat;
-	}
-	
-	private static Material nullMat()
-	{
-		return null;
 	}
 	
 	public static class CapsuleInstance extends ShapeInstance

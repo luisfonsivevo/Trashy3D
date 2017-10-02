@@ -39,7 +39,7 @@ public class Box implements Shape
 	
 	public Box(World world, float width, float height, float depth)
 	{
-		this(world, width, height, depth, nullMat());
+		this(world, width, height, depth, (Material) null);
 	}
 	
 	public Box(World world, float width, float height, float depth, Color colMat)
@@ -142,11 +142,6 @@ public class Box implements Shape
 	{
 		model.nodes.get(0).parts.get(side).material = mat;
 		return mat;
-	}
-	
-	private static Material nullMat()
-	{
-		return null;
 	}
 	
 	public static class BoxInstance extends ShapeInstance

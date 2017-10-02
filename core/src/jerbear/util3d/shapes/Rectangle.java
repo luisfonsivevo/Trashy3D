@@ -36,7 +36,7 @@ public class Rectangle implements Shape
 	
 	public Rectangle(World world, float width, float depth)
 	{
-		this(world, width, depth, nullMat());
+		this(world, width, depth, (Material) null);
 	}
 	
 	public Rectangle(World world, float width, float depth, Color colMat)
@@ -111,11 +111,6 @@ public class Rectangle implements Shape
 	{
 		model.nodes.get(0).parts.get(side).material = mat;
 		return mat;
-	}
-	
-	private static Material nullMat()
-	{
-		return null;
 	}
 	
 	public static class RectangleInstance extends ShapeInstance

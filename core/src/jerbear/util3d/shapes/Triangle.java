@@ -26,7 +26,7 @@ public class Triangle implements Shape
 	
 	private World world;
 	private Model model;
-	private Vector3 v1, v2, v3;
+	private Vector3 v1, v2, v3, nor;
 	
 	private static void init()
 	{
@@ -36,7 +36,7 @@ public class Triangle implements Shape
 	
 	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3)
 	{
-		this(world, v1, v2, v3, nullMat());
+		this(world, v1, v2, v3, (Material) null);
 	}
 	
 	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Color colMat)
@@ -54,7 +54,10 @@ public class Triangle implements Shape
 	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Material mat)
 	{
 		if(!init) init();
-		this.v1 = new Vector3(v1);
+		this.v1 = new Vector3(v3).sub(v1); //dirty haxx - use v1 as a tmp vector for calculating the normal
+		this.nor = new Vector3(v2).sub(v1).crs(this.v1).nor();
+		
+		this.v1.set(v1);
 		this.v2 = new Vector3(v2);
 		this.v3 = new Vector3(v3);
 		this.world = world;
@@ -63,16 +66,15 @@ public class Triangle implements Shape
 			return;
 		
 		VertexInfo vinf1 = new VertexInfo();
-		vinf1.position.set(v3).sub(v1); //dirty haxx - use pos as a tmp vector for calculating the normal
-		vinf1.setNor(v2).normal.sub(v1).crs(vinf1.position).nor();
+		vinf1.setNor(nor);
 		vinf1.setPos(v1);
 		
 		VertexInfo vinf2 = new VertexInfo();
-		vinf2.setNor(vinf1.normal);
+		vinf2.setNor(nor);
 		vinf2.setPos(v2);
 		
 		VertexInfo vinf3 = new VertexInfo();
-		vinf3.setNor(vinf1.normal);
+		vinf3.setNor(nor);
 		vinf3.setPos(v3);
 		
 		modelBuilder.begin();
@@ -104,6 +106,15 @@ public class Triangle implements Shape
 		}
 	}
 	
+	public Vector3 getNormal(Vector3 out, boolean flip)
+	{
+		out.set(nor);
+		if(flip)
+			out.scl(-1);
+		
+		return out;
+	}
+	
 	@Override
 	public Model getModel()
 	{
@@ -125,11 +136,6 @@ public class Triangle implements Shape
 	{
 		model.nodes.get(0).parts.get(0).material = mat;
 		return mat;
-	}
-	
-	private static Material nullMat()
-	{
-		return null;
 	}
 	
 	public static class TriangleInstance extends ShapeInstance

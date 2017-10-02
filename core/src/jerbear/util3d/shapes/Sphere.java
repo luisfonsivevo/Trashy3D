@@ -30,7 +30,7 @@ public class Sphere implements Shape
 	
 	public Sphere(World world, float radius)
 	{
-		this(world, radius, 0, 0, nullMat());
+		this(world, radius, 0, 0, (Material) null);
 	}
 	
 	public Sphere(World world, float radius, int div, Color colMat)
@@ -96,11 +96,6 @@ public class Sphere implements Shape
 	{
 		model.nodes.get(0).parts.get(0).material = mat;
 		return mat;
-	}
-	
-	private static Material nullMat()
-	{
-		return null;
 	}
 	
 	public static class SphereInstance extends ShapeInstance

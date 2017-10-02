@@ -31,7 +31,7 @@ public class Cylinder implements Shape
 	
 	public Cylinder(World world, float width, float height, float depth)
 	{
-		this(world, width, height, depth, 0, nullMat());
+		this(world, width, height, depth, 0, (Material) null);
 	}
 	
 	public Cylinder(World world, float width, float height, float depth, int div, Color colMat)
@@ -87,11 +87,6 @@ public class Cylinder implements Shape
 	{
 		model.nodes.get(0).parts.get(0).material = mat;
 		return mat;
-	}
-	
-	private static Material nullMat()
-	{
-		return null;
 	}
 	
 	public static class CylinderInstance extends ShapeInstance

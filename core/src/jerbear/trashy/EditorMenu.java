@@ -9,19 +9,28 @@ import java.util.LinkedList;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.kotcrab.vis.ui.widget.Menu;
 import com.kotcrab.vis.ui.widget.MenuBar;
 import com.kotcrab.vis.ui.widget.MenuItem;
+import com.kotcrab.vis.ui.widget.file.FileChooser;
+import com.kotcrab.vis.ui.widget.file.FileChooser.Mode;
+import com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode;
+import com.kotcrab.vis.ui.widget.file.FileChooserAdapter;
+import com.kotcrab.vis.ui.widget.file.FileTypeFilter;
 
 import jerbear.trashy.Grid.GridShape;
 import jerbear.trashy.Undoable.AddShape;
 import jerbear.util2d.dialog.Dialog;
 import jerbear.util2d.dialog.ExceptionDialog;
+import jerbear.util2d.dialog.YesNoDialog;
 import jerbear.util3d.shapes.Box;
 import jerbear.util3d.shapes.Box.BoxInstance;
 
@@ -31,11 +40,15 @@ public class EditorMenu implements Disposable
 	
 	private MenuBar menuBar;
 	private LinkedList<Undoable> undos = new LinkedList<Undoable>();
+	private LinkedList<Undoable> redos = new LinkedList<Undoable>();
 	
 	//keep references for enabling/disabling
 	private MenuItem menuFileSave;
 	private MenuItem menuEditUndo;
+	private MenuItem menuEditRedo;
 	private int asterisk = 0;
+	
+	private boolean dialogOpen;
 	
 	public EditorMenu(Grid grid)
 	{
@@ -59,7 +72,10 @@ public class EditorMenu implements Disposable
 		Menu menuEdit = new Menu("Edit");
 		menuEditUndo = new MenuItem("Undo").setShortcut(Keys.CONTROL_LEFT, Keys.Z);
 		menuEditUndo.setDisabled(true);
+		menuEditRedo = new MenuItem("Redo").setShortcut(Keys.CONTROL_LEFT, Keys.SHIFT_LEFT, Keys.Z);
+		menuEditRedo.setDisabled(true);
 		menuEdit.addItem(menuEditUndo);
+		menuEdit.addItem(menuEditRedo);
 		menuBar.addMenu(menuEdit);
 		
 		Menu menuPhysics = new Menu("Physics");
@@ -106,7 +122,7 @@ public class EditorMenu implements Disposable
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				open();
+				openDialog();
 			}
 		});
 		
@@ -119,12 +135,21 @@ public class EditorMenu implements Disposable
 			}
 		});
 		
+		menuFileSaveAs.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				saveAs();
+			}
+		});
+		
 		menuFileExit.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				Gdx.app.exit();
+				exit();
 			}
 		});
 		
@@ -136,6 +161,15 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				undo();
+			}
+		});
+		
+		menuEditRedo.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				redo();
 			}
 		});
 		
@@ -257,28 +291,39 @@ public class EditorMenu implements Disposable
 	public void shortcutCheck()
 	{
 		boolean ctrl = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);
-		//boolean shift = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT);
+		boolean shift = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT);
 		
 		if(ctrl && Gdx.input.isKeyJustPressed(Keys.N))
 			newf(true);
 		
-		if(ctrl && Gdx.input.isKeyJustPressed(Keys.O))
-			open();
+		if(Gdx.input.isKeyJustPressed(Keys.ESCAPE))
+			exit();
 		
-		if(ctrl && Gdx.input.isKeyJustPressed(Keys.S))
+		if(ctrl && Gdx.input.isKeyJustPressed(Keys.O))
+			openDialog();
+		
+		if(ctrl && !shift && Gdx.input.isKeyJustPressed(Keys.S) && !menuFileSave.isDisabled())
 			save();
 		
-		if(ctrl && Gdx.input.isKeyJustPressed(Keys.Z) && !undos.isEmpty())
+		if(ctrl && shift && Gdx.input.isKeyJustPressed(Keys.S))
+			saveAs();
+		
+		if(ctrl && !shift && Gdx.input.isKeyJustPressed(Keys.Z) && !undos.isEmpty())
 			undo();
 		
-		if(Gdx.input.isKeyJustPressed(Keys.ESCAPE))
-			Gdx.app.exit();
+		if(ctrl && shift && Gdx.input.isKeyJustPressed(Keys.Z) && !redos.isEmpty())
+			redo();
 	}
-
+	
 	public void newf(boolean firstBox)
 	{
 		while(!undos.isEmpty())
 			undo();
+		
+		if(firstBox)
+			save = null;
+		
+		redos.clear();
 		
 		if(firstBox)
 		{
@@ -292,10 +337,55 @@ public class EditorMenu implements Disposable
 		}
 		
 		asterisk = 0;
-		save = new File("test.t3d"); //TODO file save/open dialogs - this should be null
 	}
 	
-	public void open()
+	public void exit()
+	{
+		popup(new YesNoDialog("Trashy3D", "Exit without saving?")
+		{
+			@Override
+			public void onClose(boolean answer)
+			{
+				dialogOpen = false;
+				
+				if(answer)
+					Gdx.app.exit();
+			}
+		});
+	}
+	
+	public void openDialog()
+	{
+		FileTypeFilter filter = new FileTypeFilter(true);
+		filter.addRule("Trashy3D files (*.t3d)", "t3d");
+		
+		FileChooser chooser = new FileChooser(Mode.OPEN);
+		chooser.setSelectionMode(SelectionMode.FILES);
+		chooser.setMultiSelectionEnabled(false);
+		chooser.setFileTypeFilter(filter);
+		chooser.getTitleLabel().setText("Open file");
+		
+		chooser.setListener(new FileChooserAdapter()
+		{
+			@Override
+			public void selected(Array<FileHandle> file)
+			{
+				dialogOpen = false;
+				save = file.get(0).file();
+				openFile();
+			}
+			
+			@Override
+			public void canceled()
+			{
+				dialogOpen = false;
+			}
+		});
+		
+		popup(chooser);
+	}
+	
+	public void openFile()
 	{
 		newf(false);
 		
@@ -310,7 +400,7 @@ public class EditorMenu implements Disposable
 				switch(data[0])
 				{
 					case 0:
-						undo = new AddShape(data, Game.game().world);
+						undo = new AddShape(data);
 						break;
 					default:
 						throw new IOException("Invalid serialization ID: " + data[0]);
@@ -320,28 +410,57 @@ public class EditorMenu implements Disposable
 				byte[] serialization = undo.serialize();
 				remaining -= serialization.length;
 				System.arraycopy(data, serialization.length, data, 0, remaining);
+				
+				Gdx.graphics.setTitle("Trashy 3D - " + save.getName());
 			}
 		}
 		catch(IOException oops)
 		{
-			new ExceptionDialog(oops, "Failed to load " + save.getName()).open();
-			
-			Dialog.setFocus();
-			Gdx.input.setCursorCatched(false);
-			Game.game().player.pause = true;
-			
+			popup(new ExceptionDialog(oops, "Failed to open " + save.getName()));
 			newf(true);
 		}
 		
 		asterisk = undos.size();
-		Gdx.graphics.setTitle("Trashy 3D - " + save.getName());
 		menuFileSave.setDisabled(true);
+	}
+	
+	public void saveAs()
+	{
+		FileTypeFilter filter = new FileTypeFilter(true);
+		filter.addRule("Trashy3D files (*.t3d)", "t3d");
+		
+		FileChooser chooser = new FileChooser(Mode.SAVE);
+		chooser.setSelectionMode(SelectionMode.FILES);
+		chooser.setFileTypeFilter(filter);
+		chooser.getTitleLabel().setText("Save file");
+		
+		chooser.setListener(new FileChooserAdapter()
+		{
+			@Override
+			public void selected(Array<FileHandle> file)
+			{
+				dialogOpen = false;
+				save = file.get(0).file();
+				save();
+			}
+			
+			@Override
+			public void canceled()
+			{
+				dialogOpen = false;
+			}
+		});
+		
+		popup(chooser);
 	}
 	
 	public void save()
 	{
-		if(menuFileSave.isDisabled())
+		if(save == null)
+		{
+			saveAs();
 			return;
+		}
 		
 		try
 		{
@@ -352,25 +471,24 @@ public class EditorMenu implements Disposable
 			}
 			
 			stream.close();
+
+			Gdx.graphics.setTitle("Trashy 3D - " + save.getName());
 		}
 		catch(IOException oops)
 		{
-			new ExceptionDialog(oops, "Failed to save " + save.getName()).open();
-			
-			Dialog.setFocus();
-			Gdx.input.setCursorCatched(false);
-			Game.game().player.pause = true;
+			popup(new ExceptionDialog(oops, "Failed to save " + save.getName()));
 		}
 		
 		asterisk = undos.size();
-		Gdx.graphics.setTitle("Trashy 3D - " + save.getName());
 		menuFileSave.setDisabled(true);
 	}
 	
 	public void undoAdd(Undoable undo)
 	{
 		undos.add(undo);
+		redos.clear();
 		menuEditUndo.setDisabled(false);
+		menuEditRedo.setDisabled(true);
 		
 		Gdx.graphics.setTitle("Trashy 3D - *" + (save == null ? "(Untitled)" : save.getName()));
 		menuFileSave.setDisabled(false);
@@ -381,8 +499,30 @@ public class EditorMenu implements Disposable
 	public void undo()
 	{
 		undos.getLast().undo();
+		redos.add(undos.getLast());
 		undos.removeLast();
+		menuEditRedo.setDisabled(false);
 		menuEditUndo.setDisabled(undos.isEmpty());
+		
+		if(undos.size() == asterisk)
+		{
+			Gdx.graphics.setTitle("Trashy 3D - " + (save == null ? "(Untitled)" : save.getName()));
+			menuFileSave.setDisabled(true);
+		}
+		else
+		{
+			Gdx.graphics.setTitle("Trashy 3D - *" + (save == null ? "(Untitled)" : save.getName()));
+			menuFileSave.setDisabled(false);
+		}
+	}
+	
+	public void redo()
+	{
+		Undoable copy = redos.getLast().redo();
+		undos.add(copy);
+		redos.removeLast();
+		menuEditUndo.setDisabled(false);
+		menuEditRedo.setDisabled(redos.isEmpty());
 		
 		if(undos.size() == asterisk)
 		{
@@ -400,5 +540,31 @@ public class EditorMenu implements Disposable
 	public void dispose()
 	{
 		menuBar.getTable().remove();
+	}
+	
+	private void popup(Dialog dialog)
+	{
+		if(dialogOpen)
+			return;
+		
+		dialog.open();
+		Dialog.setFocus();
+		
+		Gdx.input.setCursorCatched(false);
+		Game.game().player.pause = true;
+		dialogOpen = true;
+	}
+	
+	private void popup(WidgetGroup widgets)
+	{
+		if(dialogOpen)
+			return;
+		
+		Dialog.addWidget(widgets);
+		Dialog.setFocus();
+		
+		Gdx.input.setCursorCatched(false);
+		Game.game().player.pause = true;
+		dialogOpen = true;
 	}
 }

@@ -31,7 +31,7 @@ public class Cone implements Shape
 	
 	public Cone(World world, float radius, float height)
 	{
-		this(world, radius, height, 0, nullMat());
+		this(world, radius, height, 0, (Material) null);
 	}
 	
 	public Cone(World world, float radius, float height, int div, Color colMat)
@@ -93,11 +93,6 @@ public class Cone implements Shape
 	{
 		model.nodes.get(0).parts.get(0).material = mat;
 		return mat;
-	}
-	
-	private static Material nullMat()
-	{
-		return null;
 	}
 	
 	public static class ConeInstance extends ShapeInstance
