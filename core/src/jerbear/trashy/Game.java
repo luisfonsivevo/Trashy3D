@@ -2,7 +2,11 @@ package jerbear.trashy;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Pixmap.Format;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.bullet.Bullet;
 import com.kotcrab.vis.ui.widget.file.FileChooser;
 
@@ -16,7 +20,9 @@ public class Game extends ApplicationAdapter
 	public EditorMenu menu;
 	public World world;
 	public FPSPlayer player;
-	public Grid grid;
+	
+	private SpriteBatch batch;
+	private Texture crshair;
 	
 	public static Game launch()
 	{
@@ -43,10 +49,17 @@ public class Game extends ApplicationAdapter
 		
 		player = new FPSPlayer(0.5f, 2, 0.5f, 0, 1, 0, 1.5f, 0, 1);
 		world = new World(player, 15);
-		grid = new Grid(world, 5, 1);
 		menu = new EditorMenu();
 		
-		Gdx.input.setInputProcessor(grid);
+		batch = new SpriteBatch();
+		
+		Pixmap pix = new Pixmap(24, 24, Format.RGBA4444);
+		pix.setColor(Color.WHITE);
+		pix.drawLine(0, 10, 20, 10);
+		pix.drawLine(10, 0, 10, 20);
+		crshair = new Texture(pix);
+		pix.dispose();
+		
 		menu.newf(true, true);
 	}
 	
@@ -54,32 +67,21 @@ public class Game extends ApplicationAdapter
 	public void render()
 	{
 		world.draw();
-		grid.draw();
-		Dialog.draw();
-		menu.shortcutCheck();
 		
-		if(Gdx.input.isKeyJustPressed(Keys.ALT_LEFT))
-		{
-			if(Gdx.input.getInputProcessor() == grid)
-			{
-				Dialog.setFocus();
-				Gdx.input.setCursorCatched(false);
-				player.pause = true;
-			}
-			else
-			{
-				Gdx.input.setInputProcessor(grid);
-				Gdx.input.setCursorCatched(true);
-				player.pause = false;
-			}
-		}
+		batch.begin();
+		batch.draw(crshair, (Gdx.graphics.getWidth() - crshair.getWidth()) / 2, (Gdx.graphics.getHeight() - crshair.getHeight()) / 2);
+		batch.end();
+
+		menu.draw();
+		Dialog.draw();
 	}
 	
 	@Override
 	public void dispose()
 	{
+		crshair.dispose();
+		batch.dispose();
 		menu.dispose();
-		grid.dispose();
 		world.dispose();
 		Dialog.dispose();
 	}

@@ -5,69 +5,53 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
-import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 import com.badlogic.gdx.physics.bullet.collision.btSphereShape;
 
 import jerbear.util3d.World;
 
 public class Sphere implements Shape
 {
-	private static boolean init = false;
-	private static ModelBuilder modelBuilder;
-	
-	private World world;
-	private Model model;
 	private float radius;
+	private Model model;
+	private btSphereShape colShape;
 	
-	private static void init()
+	public Sphere(float radius)
 	{
-		modelBuilder = new ModelBuilder();
-		init = true;
+		this(radius, 0, 0, (Material) null);
 	}
 	
-	public Sphere(World world, float radius)
+	public Sphere(float radius, int div, Color colMat)
 	{
-		this(world, radius, 0, 0, (Material) null);
+		this(radius, div, div, colMat);
 	}
 	
-	public Sphere(World world, float radius, int div, Color colMat)
+	public Sphere(float radius, int div, Texture texMat, boolean manageTex)
 	{
-		this(world, radius, div, div, colMat);
+		this(radius, div, div, texMat, manageTex);
 	}
 	
-	public Sphere(World world, float radius, int div, Texture texMat, boolean manageTex)
+	public Sphere(float radius, int divU, int divV, Color colMat)
 	{
-		this(world, radius, div, div, texMat, manageTex);
+		this(radius, divU, divV, new Material(ColorAttribute.createDiffuse(colMat)));
 	}
 	
-	public Sphere(World world, float radius, int divU, int divV, Color colMat)
+	public Sphere(float radius, int divU, int divV, Texture texMat, boolean manageTex)
 	{
-		this(world, radius, divU, divV, new Material(ColorAttribute.createDiffuse(colMat)));
-	}
-	
-	public Sphere(World world, float radius, int divU, int divV, Texture texMat, boolean manageTex)
-	{
-		this(world, radius, divU, divV, new Material(TextureAttribute.createDiffuse(texMat)));
+		this(radius, divU, divV, new Material(TextureAttribute.createDiffuse(texMat)));
 		if(manageTex)
 			model.manageDisposable(texMat);
 	}
 	
-	public Sphere(World world, float radius, int divU, int divV, Material mat)
+	public Sphere(float radius, int divU, int divV, Material mat)
 	{
-		if(!init) init();
 		this.radius = radius;
-		this.world = world;
+		colShape = new btSphereShape(radius);
 		
-		if(mat == null)
-			return;
-		
-		model = modelBuilder.createSphere(radius * 2, radius * 2, radius *2, divU, divV, mat, Usage.Position | Usage.Normal | Usage.TextureCoordinates);
-		
-		if(world != null)
-			world.disposables.add(this);
+		if(mat != null)
+			model = modelBuilder.createSphere(radius * 2, radius * 2, radius *2, divU, divV, mat, Usage.Position | Usage.Normal | Usage.TextureCoordinates);
 	}
 	
 	public float getRadius()
@@ -82,9 +66,9 @@ public class Sphere implements Shape
 	}
 	
 	@Override
-	public void dispose()
+	public btCollisionShape getCollisionShape()
 	{
-		model.dispose();
+		return colShape;
 	}
 	
 	public Material getMaterial()
@@ -98,33 +82,19 @@ public class Sphere implements Shape
 		return mat;
 	}
 	
-	public static class SphereInstance extends ShapeInstance
+	@Override
+	public Shape disposeByWorld(World world)
 	{
-		public SphereInstance(Sphere shape, float x, float y, float z)
-		{
-			this(shape, x, y, z, -1, 0);
-		}
+		world.disposables.add(this);
+		return this;
+	}
+	
+	@Override
+	public void dispose()
+	{
+		colShape.dispose();
 		
-		public SphereInstance(Sphere shape, float x, float y, float z, int collisionFlags, float mass)
-		{
-			if(shape.model == null)
-			{
-				construct(shape.world, shape, null, shape.radius, collisionFlags, mass);
-				return;
-			}
-			
-			ModelInstance modelInst = new ModelInstance(shape.model);
-			modelInst.transform.setToTranslation(x, y, z);
-			construct(shape.world, shape, modelInst, shape.radius, collisionFlags, mass);
-		}
-		
-		private void construct(World world, Shape shape, ModelInstance modelInst, float radius, int collisionFlags, float mass)
-		{
-			btSphereShape shapeCol = null;
-			if(collisionFlags != -1)
-				shapeCol = new btSphereShape(radius);
-			
-			super.construct(world, shape, modelInst, shapeCol, collisionFlags, mass);
-		}
+		if(model != null)
+			model.dispose();
 	}
 }

@@ -5,60 +5,44 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
-import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 import com.badlogic.gdx.physics.bullet.collision.btCylinderShape;
 
 import jerbear.util3d.World;
 
 public class Cylinder implements Shape
 {
-	private static boolean init = false;
-	private static ModelBuilder modelBuilder;
-	
-	private World world;
-	private Model model;
 	private Vector3 dim;
+	private Model model;
+	private btCylinderShape colShape;
 	
-	private static void init()
+	public Cylinder(float width, float height, float depth)
 	{
-		modelBuilder = new ModelBuilder();
-		init = true;
+		this(width, height, depth, 0, (Material) null);
 	}
 	
-	public Cylinder(World world, float width, float height, float depth)
+	public Cylinder(float width, float height, float depth, int div, Color colMat)
 	{
-		this(world, width, height, depth, 0, (Material) null);
+		this(width, height, depth, div, new Material(ColorAttribute.createDiffuse(colMat)));
 	}
 	
-	public Cylinder(World world, float width, float height, float depth, int div, Color colMat)
+	public Cylinder(float width, float height, float depth, int div, Texture texMat, boolean manageTex)
 	{
-		this(world, width, height, depth, div, new Material(ColorAttribute.createDiffuse(colMat)));
-	}
-	
-	public Cylinder(World world, float width, float height, float depth, int div, Texture texMat, boolean manageTex)
-	{
-		this(world, width, height, depth, div, new Material(TextureAttribute.createDiffuse(texMat)));
+		this(width, height, depth, div, new Material(TextureAttribute.createDiffuse(texMat)));
 		if(manageTex)
 			model.manageDisposable(texMat);
 	}
 	
-	public Cylinder(World world, float width, float height, float depth, int div, Material mat)
+	public Cylinder(float width, float height, float depth, int div, Material mat)
 	{
-		if(!init) init();
 		dim = new Vector3(width / 2f, height / 2f, depth / 2f);
-		this.world = world;
+		colShape = new btCylinderShape(new Vector3(dim));
 		
-		if(mat == null)
-			return;
-		
-		model = modelBuilder.createCylinder(width, height, depth, div, mat, Usage.Position | Usage.Normal | Usage.TextureCoordinates);
-		
-		if(world != null)
-			world.disposables.add(this);
+		if(mat != null)
+			model = modelBuilder.createCylinder(width, height, depth, div, mat, Usage.Position | Usage.Normal | Usage.TextureCoordinates);
 	}
 	
 	public Vector3 getDimensions(Vector3 out)
@@ -73,9 +57,9 @@ public class Cylinder implements Shape
 	}
 	
 	@Override
-	public void dispose()
+	public btCollisionShape getCollisionShape()
 	{
-		model.dispose();
+		return colShape;
 	}
 	
 	public Material getMaterial()
@@ -89,33 +73,19 @@ public class Cylinder implements Shape
 		return mat;
 	}
 	
-	public static class CylinderInstance extends ShapeInstance
+	@Override
+	public Shape disposeByWorld(World world)
 	{
-		public CylinderInstance(Cylinder shape, float x, float y, float z)
-		{
-			this(shape, x, y, z, -1, 0);
-		}
+		world.disposables.add(this);
+		return this;
+	}
+	
+	@Override
+	public void dispose()
+	{
+		colShape.dispose();
 		
-		public CylinderInstance(Cylinder shape, float x, float y, float z, int collisionFlags, float mass)
-		{
-			if(shape.model == null)
-			{
-				construct(shape.world, shape, null, shape.dim, collisionFlags, mass);
-				return;
-			}
-			
-			ModelInstance modelInst = new ModelInstance(shape.model);
-			modelInst.transform.setToTranslation(x, y, z);
-			construct(shape.world, shape, modelInst, shape.dim, collisionFlags, mass);
-		}
-		
-		private void construct(World world, Shape shape, ModelInstance modelInst, Vector3 dim, int collisionFlags, float mass)
-		{
-			btCylinderShape shapeCol = null;
-			if(collisionFlags != -1)
-				shapeCol = new btCylinderShape(new Vector3(dim));
-			
-			super.construct(world, shape, modelInst, shapeCol, collisionFlags, mass);
-		}
+		if(model != null)
+			model.dispose();
 	}
 }

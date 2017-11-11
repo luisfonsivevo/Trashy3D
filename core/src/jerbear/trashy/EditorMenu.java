@@ -4,7 +4,6 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.LinkedList;
 
 import com.badlogic.gdx.Gdx;
@@ -20,19 +19,25 @@ import com.badlogic.gdx.utils.Disposable;
 import com.kotcrab.vis.ui.widget.Menu;
 import com.kotcrab.vis.ui.widget.MenuBar;
 import com.kotcrab.vis.ui.widget.MenuItem;
+import com.kotcrab.vis.ui.widget.PopupMenu;
 import com.kotcrab.vis.ui.widget.file.FileChooser;
 import com.kotcrab.vis.ui.widget.file.FileChooser.Mode;
 import com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode;
 import com.kotcrab.vis.ui.widget.file.FileChooserAdapter;
 import com.kotcrab.vis.ui.widget.file.FileTypeFilter;
 
-import jerbear.trashy.Grid.GridShape;
-import jerbear.trashy.Undoable.AddShape;
+import jerbear.trashy.loader.Loader;
+import jerbear.trashy.loader.Undoable;
+import jerbear.trashy.loader.Undoable.AddShape;
+import jerbear.trashy.tools.Grid;
+import jerbear.trashy.tools.Grid.GridShape;
+import jerbear.trashy.tools.Tool;
 import jerbear.util2d.dialog.Dialog;
 import jerbear.util2d.dialog.ExceptionDialog;
 import jerbear.util2d.dialog.YesNoDialog;
+import jerbear.util3d.ShapeInstance;
+import jerbear.util3d.World;
 import jerbear.util3d.shapes.Box;
-import jerbear.util3d.shapes.Box.BoxInstance;
 
 public class EditorMenu implements Disposable
 {
@@ -47,6 +52,8 @@ public class EditorMenu implements Disposable
 	private MenuItem menuEditUndo;
 	private MenuItem menuEditRedo;
 	private int asterisk = 0;
+	
+	private Tool tool;
 	
 	private boolean dialogOpen;
 	
@@ -78,35 +85,31 @@ public class EditorMenu implements Disposable
 		menuEdit.addItem(menuEditRedo);
 		menuBar.addMenu(menuEdit);
 		
-		Menu menuPhysics = new Menu("Physics");
-		MenuItem menuPhysicsDis = new MenuItem("Disabled");
-		MenuItem menuPhysicsDyn = new MenuItem("Dynamic");
-		MenuItem menuPhysicsKin = new MenuItem("Kinematic");
-		MenuItem menuPhysicsStc = new MenuItem("Static");
-		menuPhysics.addItem(menuPhysicsDis);
-		menuPhysics.addItem(menuPhysicsDyn);
-		menuPhysics.addItem(menuPhysicsKin);
-		menuPhysics.addItem(menuPhysicsStc);
-		menuBar.addMenu(menuPhysics);
+		Menu menuTools = new Menu("Tools");
+		MenuItem menuToolsGrid = new MenuItem("Grid");
+		PopupMenu menuToolsGridSub = new PopupMenu();
+		MenuItem menuToolsGridBox = new MenuItem("Box");
+		MenuItem menuToolsGridRamp = new MenuItem("Ramp");
+		MenuItem menuToolsGridWall = new MenuItem("Wall");
+		MenuItem menuToolsGridTri = new MenuItem("Triangle");
+		MenuItem menuToolsGridSphere = new MenuItem("Sphere");
+		MenuItem menuToolsGridCylinder = new MenuItem("Cylinder");
+		MenuItem menuToolsGridCone = new MenuItem("Cone");
+		MenuItem menuToolsGridCapsule = new MenuItem("Capsule");
+		menuToolsGridSub.addItem(menuToolsGridBox);
+		menuToolsGridSub.addItem(menuToolsGridRamp);
+		menuToolsGridSub.addItem(menuToolsGridWall);
+		menuToolsGridSub.addItem(menuToolsGridTri);
+		menuToolsGridSub.addItem(menuToolsGridSphere);
+		menuToolsGridSub.addItem(menuToolsGridCylinder);
+		menuToolsGridSub.addItem(menuToolsGridCone);
+		menuToolsGridSub.addItem(menuToolsGridCapsule);
+		menuToolsGrid.setSubMenu(menuToolsGridSub);
+		menuTools.addItem(menuToolsGrid);
+		menuBar.addMenu(menuTools);
 		
-		Menu menuShapes = new Menu("Shapes");
-		MenuItem menuShapesBox = new MenuItem("Box");
-		MenuItem menuShapesRamp = new MenuItem("Ramp");
-		MenuItem menuShapesWall = new MenuItem("Wall");
-		MenuItem menuShapesTri = new MenuItem("Triangle");
-		MenuItem menuShapesSphere = new MenuItem("Sphere");
-		MenuItem menuShapesCylinder = new MenuItem("Cylinder");
-		MenuItem menuShapesCone = new MenuItem("Cone");
-		MenuItem menuShapesCapsule = new MenuItem("Capsule");
-		menuShapes.addItem(menuShapesBox);
-		menuShapes.addItem(menuShapesRamp);
-		menuShapes.addItem(menuShapesWall);
-		menuShapes.addItem(menuShapesTri);
-		menuShapes.addItem(menuShapesSphere);
-		menuShapes.addItem(menuShapesCylinder);
-		menuShapes.addItem(menuShapesCone);
-		menuShapes.addItem(menuShapesCapsule);
-		menuBar.addMenu(menuShapes);
+		tool = new Grid(Game.game().world, 5, 1);
+		Gdx.input.setInputProcessor(tool);
 		
 		menuFileNew.addListener(new ChangeListener()
 		{
@@ -173,123 +176,134 @@ public class EditorMenu implements Disposable
 			}
 		});
 		
-		Grid grid = Game.game().grid;
 		
-		menuPhysicsDis.addListener(new ChangeListener()
+		
+		//PHYSICS
+		//Disabled: -1
+		//Dynamic: 0
+		//Kinematic: CollisionFlags.CF_KINEMATIC_OBJECT
+		//Static: CollisionFlags.CF_STATIC_OBJECT;
+		
+		
+		
+		menuToolsGridBox.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.physicsMode = -1;
+				if(!(tool instanceof Grid))
+					tool = new Grid(Game.game().world, 5, 1); //defaults to box
+				else
+					((Grid) tool).setShape(GridShape.BOX);
+					
 			}
 		});
 		
-		menuPhysicsDyn.addListener(new ChangeListener()
+		menuToolsGridRamp.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.physicsMode = 0;
+				if(!(tool instanceof Grid))
+					tool = new Grid(Game.game().world, 5, 1);
+				
+				((Grid) tool).setShape(GridShape.RAMP);
 			}
 		});
 		
-		menuPhysicsKin.addListener(new ChangeListener()
+		menuToolsGridWall.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.physicsMode = CollisionFlags.CF_KINEMATIC_OBJECT;
+				if(!(tool instanceof Grid))
+					tool = new Grid(Game.game().world, 5, 1);
+				
+				((Grid) tool).setShape(GridShape.WALL);
 			}
 		});
 		
-		menuPhysicsStc.addListener(new ChangeListener()
+		menuToolsGridTri.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.physicsMode = CollisionFlags.CF_STATIC_OBJECT;
+				if(!(tool instanceof Grid))
+					tool = new Grid(Game.game().world, 5, 1);
+				
+				((Grid) tool).setShape(GridShape.TRIANGLE);
 			}
 		});
 		
-		
-		
-		menuShapesBox.addListener(new ChangeListener()
+		menuToolsGridSphere.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.setShape(GridShape.BOX);
+				if(!(tool instanceof Grid))
+					tool = new Grid(Game.game().world, 5, 1);
+				
+				((Grid) tool).setShape(GridShape.SPHERE);
 			}
 		});
 		
-		menuShapesRamp.addListener(new ChangeListener()
+		menuToolsGridCylinder.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.setShape(GridShape.RAMP);
+				if(!(tool instanceof Grid))
+					tool = new Grid(Game.game().world, 5, 1);
+				
+				((Grid) tool).setShape(GridShape.CYLINDER);
 			}
 		});
 		
-		menuShapesWall.addListener(new ChangeListener()
+		menuToolsGridCone.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.setShape(GridShape.WALL);
+				if(!(tool instanceof Grid))
+					tool = new Grid(Game.game().world, 5, 1);
+				
+				((Grid) tool).setShape(GridShape.CONE);
 			}
 		});
 		
-		menuShapesTri.addListener(new ChangeListener()
+		menuToolsGridCapsule.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.setShape(GridShape.TRIANGLE);
-			}
-		});
-		
-		menuShapesSphere.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				grid.setShape(GridShape.SPHERE);
-			}
-		});
-		
-		menuShapesCylinder.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				grid.setShape(GridShape.CYLINDER);
-			}
-		});
-		
-		menuShapesCone.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				grid.setShape(GridShape.CONE);
-			}
-		});
-		
-		menuShapesCapsule.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				grid.setShape(GridShape.CAPSULE);
+				if(!(tool instanceof Grid))
+					tool = new Grid(Game.game().world, 5, 1);
+				
+				((Grid) tool).setShape(GridShape.CAPSULE);
 			}
 		});
 		
 		Dialog.addWidget(menuBar.getTable());
 	}
 	
-	public void shortcutCheck()
+	public void draw()
 	{
+		if(Gdx.input.isKeyJustPressed(Keys.ALT_LEFT))
+		{
+			if(Gdx.input.getInputProcessor() == tool)
+			{
+				Dialog.setFocus();
+				Gdx.input.setCursorCatched(false);
+				Game.game().player.pause = true;
+			}
+			else
+			{
+				Gdx.input.setInputProcessor(tool);
+				Gdx.input.setCursorCatched(true);
+				Game.game().player.pause = false;
+			}
+		}
+		
 		boolean ctrl = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);
 		boolean shift = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT);
 		
@@ -313,6 +327,8 @@ public class EditorMenu implements Disposable
 		
 		if(ctrl && shift && Gdx.input.isKeyJustPressed(Keys.Z) && !redos.isEmpty())
 			redo();
+		
+		tool.draw();
 	}
 	
 	public void newf(boolean firstBox, boolean force)
@@ -323,13 +339,14 @@ public class EditorMenu implements Disposable
 				undo();
 			
 			if(firstBox)
-				save = null; //TODO messy
+				save = null; //TODO kinda messy but works
 			
 			redos.clear();
 			
 			if(firstBox)
 			{
-				undoAdd(new AddShape(new BoxInstance(new Box(Game.game().world, 2, 1, 2, Color.RED), 0, -0.5f, 0, CollisionFlags.CF_STATIC_OBJECT, 0)));
+				World world = Game.game().world;
+				undoAdd(new AddShape(world.addShape(new ShapeInstance(new Box(2, 1, 2, Color.RED).disposeByWorld(world), 0, -0.5f, 0, CollisionFlags.CF_STATIC_OBJECT, 0))));
 				Gdx.graphics.setTitle("*(Untitled) - Trashy 3D");
 			}
 			else
@@ -470,29 +487,17 @@ public class EditorMenu implements Disposable
 		
 		try
 		{
-			byte[] data = Files.readAllBytes(file.toPath());
-			int remaining = data.length;
-			
-			while(remaining > 0)
+			LinkedList<Undoable> newUndos = Loader.loadFile(file);
+			for(int i = 0; i < newUndos.size() - 1; i++)
 			{
-				Undoable undo;
-				switch(data[0])
-				{
-					case 0:
-						undo = new AddShape(data);
-						break;
-					default:
-						throw new IOException("Invalid serialization ID: " + data[0]);
-				}
-
-				undoAdd(undo);
-				byte[] serialization = undo.serialize();
-				remaining -= serialization.length;
-				System.arraycopy(data, serialization.length, data, 0, remaining);
-				
-				save = file;
-				Gdx.graphics.setTitle(save.getName() + " - Trashy 3D");
+				undos.add(newUndos.get(i));
 			}
+			
+			undoAdd(newUndos.getLast());
+			
+			save = file;
+			Gdx.graphics.setTitle(save.getName() + " - Trashy 3D");
+			menuFileSave.setDisabled(true);
 		}
 		catch(IOException oops)
 		{
@@ -501,7 +506,6 @@ public class EditorMenu implements Disposable
 		}
 		
 		asterisk = undos.size();
-		menuFileSave.setDisabled(true);
 	}
 	
 	public void saveAs(SaveEvent event)
@@ -545,6 +549,10 @@ public class EditorMenu implements Disposable
 		try
 		{
 			DataOutputStream stream = new DataOutputStream(new FileOutputStream(save));
+			stream.write((byte) 'T');
+			stream.write((byte) '3');
+			stream.write((byte) 'D');
+			
 			for(Undoable undo : undos)
 			{
 				stream.write(undo.serialize());

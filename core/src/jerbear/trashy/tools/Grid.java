@@ -1,47 +1,41 @@
-package jerbear.trashy;
+package jerbear.trashy.tools;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Buttons;
 import com.badlogic.gdx.Input.Keys;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
-import com.badlogic.gdx.utils.Disposable;
 
-import jerbear.trashy.Undoable.AddShape;
+import jerbear.trashy.Game;
+import jerbear.trashy.loader.Undoable.AddShape;
+import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
 import jerbear.util3d.shapes.Box;
-import jerbear.util3d.shapes.Box.BoxInstance;
 import jerbear.util3d.shapes.Capsule;
-import jerbear.util3d.shapes.Capsule.CapsuleInstance;
 import jerbear.util3d.shapes.Cone;
-import jerbear.util3d.shapes.Cone.ConeInstance;
 import jerbear.util3d.shapes.Cylinder;
-import jerbear.util3d.shapes.Cylinder.CylinderInstance;
 import jerbear.util3d.shapes.Rectangle;
-import jerbear.util3d.shapes.Rectangle.RectangleInstance;
 import jerbear.util3d.shapes.Sphere;
-import jerbear.util3d.shapes.Sphere.SphereInstance;
 import jerbear.util3d.shapes.Triangle;
-import jerbear.util3d.shapes.Triangle.TriangleInstance;
 
-public class Grid extends InputAdapter implements Disposable
+public class Grid extends Tool
 {
 	private static Vector3 tmp1 = new Vector3();
 	private static Vector3 tmp2 = new Vector3();
 	private static Vector3 tmp3 = new Vector3();
+	private static Matrix4 tmpM = new Matrix4();
 	
 	public World world;
 	public int size;
 	public float zoom;
 	
-	public int physicsMode = CollisionFlags.CF_STATIC_OBJECT;
 	public Color color = Color.RED;
 	public boolean flipAxis;
 	
@@ -68,8 +62,6 @@ public class Grid extends InputAdapter implements Disposable
 		this.zoom = zoom;
 		
 		rend = new ShapeRenderer();
-		selected = new Vector3();
-		first = new Vector3();
 	}
 	
 	public void draw()
@@ -359,14 +351,6 @@ public class Grid extends InputAdapter implements Disposable
 			}
 			rend.end();
 		}
-		
-		rend.getProjectionMatrix().idt();
-		rend.updateMatrices();
-		rend.begin(ShapeType.Line);
-		rend.setColor(Color.WHITE);
-		rend.line(-0.02f, 0, 0.02f, 0);
-		rend.line(0, -0.02f, 0, 0.02f);
-		rend.end();
 	}
 	
 	@Override
@@ -396,7 +380,7 @@ public class Grid extends InputAdapter implements Disposable
 								
 								if(width * height * depth > 0)
 								{
-									BoxInstance box = new BoxInstance(new Box(world, width, height, depth, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									ShapeInstance box = world.addShape(new ShapeInstance(new Box(width, height, depth, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 									
 									Game.game().menu.undoAdd(new AddShape(box));
 									resetPoints();
@@ -404,7 +388,7 @@ public class Grid extends InputAdapter implements Disposable
 								
 								break;
 							case RAMP:
-								RectangleInstance ramp;
+								ShapeInstance ramp;
 								float lengthramp, pyth;
 								
 								if(facingAxis())
@@ -414,8 +398,8 @@ public class Grid extends InputAdapter implements Disposable
 									
 									if(lengthramp > 0 && pyth > 0)
 									{
-										ramp = new RectangleInstance(new Rectangle(world, lengthramp, pyth, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
-										ramp.setTransform(ramp.getTransform().rotateRad(-1, 0, 0, (float) Math.atan2(selected.y - first.y, selected.z - first.z)));
+										ramp = world.addShape(new ShapeInstance(new Rectangle(lengthramp, pyth, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
+										ramp.setTransform(ramp.getTransform(tmpM).rotateRad(-1, 0, 0, (float) Math.atan2(selected.y - first.y, selected.z - first.z)));
 										
 										Game.game().menu.undoAdd(new AddShape(ramp));
 										resetPoints();
@@ -428,8 +412,8 @@ public class Grid extends InputAdapter implements Disposable
 									
 									if(lengthramp > 0 && pyth > 0)
 									{
-										ramp = new RectangleInstance(new Rectangle(world, pyth, lengthramp, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
-										ramp.setTransform(ramp.getTransform().rotateRad(0, 0, 1, (float) Math.atan2(selected.y - first.y, selected.x - first.x)));
+										ramp = world.addShape(new ShapeInstance(new Rectangle(pyth, lengthramp, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
+										ramp.setTransform(ramp.getTransform(tmpM).rotateRad(0, 0, 1, (float) Math.atan2(selected.y - first.y, selected.x - first.x)));
 										
 										Game.game().menu.undoAdd(new AddShape(ramp));
 										resetPoints();
@@ -443,8 +427,8 @@ public class Grid extends InputAdapter implements Disposable
 								
 								if(lengthwall > 0 && heightwall > 0)
 								{
-									RectangleInstance wall = new RectangleInstance(new Rectangle(world, lengthwall, heightwall, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
-									wall.setTransform(wall.getTransform().rotate(Vector3.X, 90).rotateRad(Vector3.Z, (float) Math.atan2(selected.z - first.z, selected.x - first.x)));
+									ShapeInstance wall = world.addShape(new ShapeInstance(new Rectangle(lengthwall, heightwall, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
+									wall.setTransform(wall.getTransform(tmpM).rotate(Vector3.X, 90).rotateRad(Vector3.Z, (float) Math.atan2(selected.z - first.z, selected.x - first.x)));
 									
 									Game.game().menu.undoAdd(new AddShape(wall));
 									resetPoints();
@@ -463,8 +447,7 @@ public class Grid extends InputAdapter implements Disposable
 									if(!second.equals(selected))
 									{
 										tmp1.set(first).add(second).add(selected).scl(1 / 3f); //offset by the centroid to give the triangle a center of rotation
-										TriangleInstance tri = new TriangleInstance(new Triangle(world, first.sub(tmp1), second.sub(tmp1), selected.sub(tmp1), color), 0, 0, 0, physicsMode, physicsMode == 0 ? 1 : 0);
-										tri.setTransform(tri.getTransform().translate(tmp1));
+										ShapeInstance tri = world.addShape(new ShapeInstance(new Triangle(first.sub(tmp1), second.sub(tmp1), selected.sub(tmp1), color).disposeByWorld(world), tmp1, CollisionFlags.CF_STATIC_OBJECT, 0));
 										
 										Game.game().menu.undoAdd(new AddShape(tri));
 										resetPoints();
@@ -472,10 +455,10 @@ public class Grid extends InputAdapter implements Disposable
 								}
 								break;
 							case SPHERE:
-								float radiussph = first.dst(selected);
-								if(radiussph > 0)
+								float radiussphere = first.dst(selected);
+								if(radiussphere > 0)
 								{
-									SphereInstance sphere = new SphereInstance(new Sphere(world, radiussph, 10, 10, color), first.x, first.y, first.z, physicsMode, physicsMode == 0 ? 1 : 0);
+									ShapeInstance sphere = world.addShape(new ShapeInstance(new Sphere(radiussphere, 10, 10, color).disposeByWorld(world), first, CollisionFlags.CF_STATIC_OBJECT, 0));
 									
 									Game.game().menu.undoAdd(new AddShape(sphere));
 									resetPoints();
@@ -490,14 +473,15 @@ public class Grid extends InputAdapter implements Disposable
 								}
 								else
 								{
-									float circcyl = first.dst(second) * 2f;
+									float diamcyl = first.dst(second) * 2f;
 									float heightcyl = first.dst(selected);
-									CylinderInstance cyl = new CylinderInstance(new Cylinder(world, circcyl, heightcyl, circcyl, 10, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									
+									ShapeInstance cyl = world.addShape(new ShapeInstance(new Cylinder(diamcyl, heightcyl, diamcyl, 10, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 									
 									if(selected.x - first.x != 0)
-										cyl.setTransform(cyl.getTransform().rotate(Vector3.Z, 90));
+										cyl.setTransform(cyl.getTransform(tmpM).rotate(Vector3.Z, 90));
 									else if(selected.z - first.z != 0)
-										cyl.setTransform(cyl.getTransform().rotate(Vector3.X, 90));
+										cyl.setTransform(cyl.getTransform(tmpM).rotate(Vector3.X, 90));
 									
 									Game.game().menu.undoAdd(new AddShape(cyl));
 									resetPoints();
@@ -513,14 +497,15 @@ public class Grid extends InputAdapter implements Disposable
 								{
 									float radiuscone = first.dst(second);
 									float heightcone = first.dst(selected);
-									ConeInstance cone = new ConeInstance(new Cone(world, radiuscone, heightcone, 10, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									
+									ShapeInstance cone = world.addShape(new ShapeInstance(new Cone(radiuscone, heightcone, 10, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 									
 									if(selected.x - first.x != 0)
-										cone.setTransform(cone.getTransform().rotate(Vector3.Z, selected.x - first.x > 0 ? -90 : 90));
+										cone.setTransform(cone.getTransform(tmpM).rotate(Vector3.Z, selected.x - first.x > 0 ? -90 : 90));
 									else if(selected.z - first.z != 0)
-										cone.setTransform(cone.getTransform().rotate(Vector3.X, selected.z - first.z > 0 ? 90 : -90));
+										cone.setTransform(cone.getTransform(tmpM).rotate(Vector3.X, selected.z - first.z > 0 ? 90 : -90));
 									else if(selected.y < first.y)
-										cone.setTransform(cone.getTransform().rotate(Vector3.X, 180));
+										cone.setTransform(cone.getTransform(tmpM).rotate(Vector3.X, 180));
 									
 									Game.game().menu.undoAdd(new AddShape(cone));
 									resetPoints();
@@ -536,12 +521,13 @@ public class Grid extends InputAdapter implements Disposable
 								{
 									float radiuscap = first.dst(second);
 									float heightcap = first.dst(selected) + 2 * radiuscap;
-									CapsuleInstance cap = new CapsuleInstance(new Capsule(world, radiuscap, heightcap, 10, color), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, physicsMode, physicsMode == 0 ? 1 : 0);
+									
+									ShapeInstance cap = world.addShape(new ShapeInstance(new Capsule(radiuscap, heightcap, 10, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 									
 									if(selected.x - first.x != 0)
-										cap.setTransform(cap.getTransform().rotate(Vector3.Z, 90));
+										cap.setTransform(cap.getTransform(tmpM).rotate(Vector3.Z, 90));
 									else if(selected.z - first.z != 0)
-										cap.setTransform(cap.getTransform().rotate(Vector3.X, 90));
+										cap.setTransform(cap.getTransform(tmpM).rotate(Vector3.X, 90));
 									
 									Game.game().menu.undoAdd(new AddShape(cap));
 									resetPoints();
@@ -603,8 +589,7 @@ public class Grid extends InputAdapter implements Disposable
 	{
 		rend.dispose();
 	}
-
-	//TODO use position relative to selection to determine
+	
 	//true for z, false for x
 	private boolean facingAxis()
 	{

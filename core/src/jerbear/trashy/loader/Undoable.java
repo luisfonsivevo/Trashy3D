@@ -1,4 +1,4 @@
-package jerbear.trashy;
+package jerbear.trashy.loader;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -8,24 +8,19 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 
+import jerbear.trashy.Game;
+import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
 import jerbear.util3d.shapes.Box;
-import jerbear.util3d.shapes.Box.BoxInstance;
 import jerbear.util3d.shapes.Capsule;
-import jerbear.util3d.shapes.Capsule.CapsuleInstance;
 import jerbear.util3d.shapes.Cone;
-import jerbear.util3d.shapes.Cone.ConeInstance;
 import jerbear.util3d.shapes.Cylinder;
-import jerbear.util3d.shapes.Cylinder.CylinderInstance;
 import jerbear.util3d.shapes.Rectangle;
-import jerbear.util3d.shapes.Rectangle.RectangleInstance;
 import jerbear.util3d.shapes.Shape;
-import jerbear.util3d.shapes.ShapeInstance;
 import jerbear.util3d.shapes.Sphere;
-import jerbear.util3d.shapes.Sphere.SphereInstance;
 import jerbear.util3d.shapes.Triangle;
-import jerbear.util3d.shapes.Triangle.TriangleInstance;
 
 public interface Undoable
 {
@@ -36,8 +31,10 @@ public interface Undoable
 	public class AddShape implements Undoable
 	{
 		public static final byte id = (byte) 0;
+		public static final int maxSize = 106;
 		
-		private static Vector3 tmp1 = new Vector3();
+		private static Vector3 tmpV = new Vector3();
+		private static Matrix4 tmpM = new Matrix4();
 		
 		private ShapeInstance inst;
 		private byte[] backup;
@@ -62,18 +59,6 @@ public interface Undoable
 				}
 				
 				Color col = new Color(buf.getInt());
-				int colFlags = buf.getInt();
-				float mass = buf.getFloat();
-				
-				boolean loadPhys = colFlags != -1;
-				
-				int actState = loadPhys ? buf.getInt() : 0;
-				float restitution = loadPhys ? buf.getFloat() : 0;
-				float friction = loadPhys ? buf.getFloat() : 0;
-				float rollFriction = loadPhys ? buf.getFloat() : 0;
-				
-				Vector3 velLin = loadPhys ? new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat()) : null;
-				Vector3 velAng = loadPhys ? new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat()) : null;
 				
 				World world = Game.game().world;
 				byte type = buf.get();
@@ -83,55 +68,51 @@ public interface Undoable
 						float widthbox = buf.getFloat();
 						float heightbox = buf.getFloat();
 						float depthbox = buf.getFloat();
-						inst = new BoxInstance(new Box(world, widthbox, heightbox, depthbox, col), 0, 0, 0, colFlags, mass);
+						
+						inst = world.addShape(new ShapeInstance(new Box(widthbox, heightbox, depthbox, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 1:
 						float radiuscap = buf.getFloat();
 						float heightcap = buf.getFloat();
-						inst = new CapsuleInstance(new Capsule(world, radiuscap, heightcap, 10, col), 0, 0, 0, colFlags, mass);
+						
+						inst = world.addShape(new ShapeInstance(new Capsule(radiuscap, heightcap, 10, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 2:
 						float radiuscone = buf.getFloat();
 						float heightcone = buf.getFloat();
-						inst = new ConeInstance(new Cone(world, radiuscone, heightcone, 10, col), 0, 0, 0, colFlags, mass);
+						
+						inst = world.addShape(new ShapeInstance(new Cone(radiuscone, heightcone, 10, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 3:
 						float widthcyl = buf.getFloat();
 						float heightcyl = buf.getFloat();
 						float depthcyl = buf.getFloat();
-						inst = new CylinderInstance(new Cylinder(world, widthcyl, heightcyl, depthcyl, 10, col), 0, 0, 0, colFlags, mass);
+						
+						inst = world.addShape(new ShapeInstance(new Cylinder(widthcyl, heightcyl, depthcyl, 10, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 4:
 						float widthrect = buf.getFloat();
 						float depthrect = buf.getFloat();
-						inst = new RectangleInstance(new Rectangle(world, widthrect, depthrect, col), 0, 0, 0, colFlags, mass);
+						
+						inst = world.addShape(new ShapeInstance(new Rectangle(widthrect, depthrect, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 5:
 						float radiussph = buf.getFloat();
-						inst = new SphereInstance(new Sphere(world, radiussph, 10, 10, col), 0, 0, 0, colFlags, mass);
+						
+						inst = world.addShape(new ShapeInstance(new Sphere(radiussph, 10, 10, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 6:
 						Vector3 v1 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
 						Vector3 v2 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
 						Vector3 v3 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
-						inst = new TriangleInstance(new Triangle(world, v1, v2, v3, col), 0, 0, 0, colFlags, mass);
+						
+						inst = world.addShape(new ShapeInstance(new Triangle(v1, v2, v3, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					default:
 						throw new IllegalArgumentException("Invalid shape ID: " + type);
 				}
 				
 				inst.setTransform(transform);
-				
-				if(inst.isCollision())
-				{
-					inst.getBody().setActivationState(actState);
-					inst.getBody().setRestitution(restitution);
-					inst.getBody().setFriction(friction);
-					inst.getBody().setRollingFriction(rollFriction);
-					
-					inst.getBody().setLinearVelocity(velLin);
-					inst.getBody().setAngularVelocity(velAng);
-				}
 			}
 			catch(Exception oops)
 			{
@@ -153,54 +134,34 @@ public interface Undoable
 			}
 			catch(IOException oops)
 			{
-				//THIS SHOULD NEVER HAPPEN (serialize() will always return a valid byte array)
+				//THIS SHOULD NEVER HAPPEN (backup is always a valid byte array)
 				return null;
 			}
 		}
 		
 		public byte[] serialize()
 		{
-			ByteBuffer buf = ByteBuffer.allocate(154).order(ByteOrder.LITTLE_ENDIAN);
+			ByteBuffer buf = ByteBuffer.allocate(maxSize).order(ByteOrder.LITTLE_ENDIAN);
 			buf.put(id);
 			
 			Shape shape = inst.getShape();
 			
-			float[] transform = inst.getTransform().val;
+			float[] transform = inst.getTransform(tmpM).val;
 			for(int i = 0; i < 16; i++)
 			{
 				buf.putFloat(transform[i]);
 			}
 			
-			buf.putInt(Color.rgba8888(((ColorAttribute) (shape.getModel().nodes.get(0).parts.get(0).material.get(ColorAttribute.Diffuse))).color));
-			buf.putInt(inst.isCollision() ? inst.getBody().getCollisionFlags() : -1);
-			buf.putFloat(inst.getMass());
-			
-			if(inst.isCollision())
-			{
-				buf.putInt(inst.getBody().getActivationState());
-				buf.putFloat(inst.getBody().getRestitution());
-				buf.putFloat(inst.getBody().getFriction());
-				buf.putFloat(inst.getBody().getRollingFriction());
-				
-				Vector3 tmp2 = inst.getBody().getLinearVelocity();
-				buf.putFloat(tmp2.x);
-				buf.putFloat(tmp2.y);
-				buf.putFloat(tmp2.z);
-				
-				tmp2 = inst.getBody().getAngularVelocity();
-				buf.putFloat(tmp2.x);
-				buf.putFloat(tmp2.y);
-				buf.putFloat(tmp2.z);
-			}
+			buf.putInt(Color.rgba8888(((ColorAttribute) (inst.getModelInstance().nodes.get(0).parts.get(0).material.get(ColorAttribute.Diffuse))).color));
 			
 			if(shape instanceof Box)
 			{
 				buf.put((byte) 0);
 				Box dim = (Box) shape;
-				dim.getDimensions(tmp1);
-				buf.putFloat(tmp1.x);
-				buf.putFloat(tmp1.y);
-				buf.putFloat(tmp1.z);
+				dim.getDimensions(tmpV);
+				buf.putFloat(tmpV.x);
+				buf.putFloat(tmpV.y);
+				buf.putFloat(tmpV.z);
 			}
 			else if(shape instanceof Capsule)
 			{
@@ -220,18 +181,18 @@ public interface Undoable
 			{
 				buf.put((byte) 3);
 				Cylinder dim = (Cylinder) shape;
-				dim.getDimensions(tmp1);
-				buf.putFloat(tmp1.x);
-				buf.putFloat(tmp1.y);
-				buf.putFloat(tmp1.z);
+				dim.getDimensions(tmpV);
+				buf.putFloat(tmpV.x);
+				buf.putFloat(tmpV.y);
+				buf.putFloat(tmpV.z);
 			}
 			else if(shape instanceof Rectangle)
 			{
 				buf.put((byte) 4);
 				Rectangle dim = (Rectangle) shape;
-				dim.getDimensions(tmp1);
-				buf.putFloat(tmp1.x);
-				buf.putFloat(tmp1.z);
+				dim.getDimensions(tmpV);
+				buf.putFloat(tmpV.x);
+				buf.putFloat(tmpV.z);
 			}
 			else if(shape instanceof Sphere)
 			{
@@ -244,20 +205,20 @@ public interface Undoable
 				buf.put((byte) 6);
 				Triangle dim = (Triangle) shape;
 				
-				dim.getPoint(tmp1, 0);
-				buf.putFloat(tmp1.x);
-				buf.putFloat(tmp1.y);
-				buf.putFloat(tmp1.z);
+				dim.getPoint(tmpV, 0);
+				buf.putFloat(tmpV.x);
+				buf.putFloat(tmpV.y);
+				buf.putFloat(tmpV.z);
 				
-				dim.getPoint(tmp1, 1);
-				buf.putFloat(tmp1.x);
-				buf.putFloat(tmp1.y);
-				buf.putFloat(tmp1.z);
+				dim.getPoint(tmpV, 1);
+				buf.putFloat(tmpV.x);
+				buf.putFloat(tmpV.y);
+				buf.putFloat(tmpV.z);
 				
-				dim.getPoint(tmp1, 2);
-				buf.putFloat(tmp1.x);
-				buf.putFloat(tmp1.y);
-				buf.putFloat(tmp1.z);
+				dim.getPoint(tmpV, 2);
+				buf.putFloat(tmpV.x);
+				buf.putFloat(tmpV.y);
+				buf.putFloat(tmpV.z);
 			}
 			else
 			{

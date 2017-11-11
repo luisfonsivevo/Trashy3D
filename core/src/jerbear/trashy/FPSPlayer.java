@@ -5,17 +5,19 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 
 import jerbear.util3d.Player;
-import jerbear.util3d.shapes.ShapeInstance;
-import jerbear.util3d.shapes.ShapeInstance.CollisionListener;
+import jerbear.util3d.ShapeInstance;
+import jerbear.util3d.ShapeInstance.CollisionListener;
 
 public class FPSPlayer extends Player implements CollisionListener
 {
 	private static Vector3 tmp1 = new Vector3();
 	private static Vector3 tmp2 = new Vector3();
+	private static Matrix4 tmpM = new Matrix4();
 	
 	private static int jumpTimerMax = 30;
 	
@@ -138,16 +140,16 @@ public class FPSPlayer extends Player implements CollisionListener
 					tmp2.y -= speed;
 			}
 			
-			getTransform().getTranslation(tmp1);
+			getPosition(tmp1);
 			tmp2.scl(Gdx.graphics.getDeltaTime() * 2).add(tmp1);
 		}
 		else
 		{
 			getBody().setLinearVelocity(tmp2);
-			getTransform().getTranslation(tmp2);
+			getPosition(tmp2);
 		}
 		
-		setTransform(getTransform().idt().setToTranslation(tmp2)); //delete any rotation
+		setTransform(tmpM.setToTranslation(tmp2)); //delete any rotation
 		getBody().setAngularVelocity(Vector3.Zero);
 		
 		canJump = false;

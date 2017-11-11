@@ -6,61 +6,50 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
-import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder.VertexInfo;
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 import com.badlogic.gdx.physics.bullet.collision.btTriangleShape;
 
 import jerbear.util3d.World;
 
 public class Triangle implements Shape
 {
-	public static final int SIDE_BOTTOM = 0;
-	public static final int SIDE_TOP = 1;
+	public static final int SIDE_FRONT = 0;
+	public static final int SIDE_BACK = 1;
 	
-	private static boolean init = false;
-	private static ModelBuilder modelBuilder;
-	
-	private World world;
-	private Model model;
 	private Vector3 v1, v2, v3, nor;
+	private Model model;
+	private btTriangleShape colShape;
 	
-	private static void init()
+	public Triangle(Vector3 v1, Vector3 v2, Vector3 v3)
 	{
-		modelBuilder = new ModelBuilder();
-		init = true;
+		this(v1, v2, v3, (Material) null);
 	}
 	
-	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3)
+	public Triangle(Vector3 v1, Vector3 v2, Vector3 v3, Color colMat)
 	{
-		this(world, v1, v2, v3, (Material) null);
+		this(v1, v2, v3, new Material(ColorAttribute.createDiffuse(colMat)));
 	}
 	
-	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Color colMat)
+	public Triangle(Vector3 v1, Vector3 v2, Vector3 v3, Texture texMat, boolean manageTex)
 	{
-		this(world, v1, v2, v3, new Material(ColorAttribute.createDiffuse(colMat)));
-	}
-	
-	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Texture texMat, boolean manageTex)
-	{
-		this(world, v1, v2, v3, new Material(TextureAttribute.createDiffuse(texMat)));
+		this(v1, v2, v3, new Material(TextureAttribute.createDiffuse(texMat)));
 		if(manageTex)
 			model.manageDisposable(texMat);
 	}
 	
-	public Triangle(World world, Vector3 v1, Vector3 v2, Vector3 v3, Material mat)
+	public Triangle(Vector3 v1, Vector3 v2, Vector3 v3, Material mat)
 	{
-		if(!init) init();
+		colShape = new btTriangleShape(v1, v2, v3);
 		this.v1 = new Vector3(v3).sub(v1); //dirty haxx - use v1 as a tmp vector for calculating the normal
 		this.nor = new Vector3(v2).sub(v1).crs(this.v1).nor();
 		
 		this.v1.set(v1);
 		this.v2 = new Vector3(v2);
 		this.v3 = new Vector3(v3);
-		this.world = world;
 		
 		if(mat == null)
 			return;
@@ -86,9 +75,6 @@ public class Triangle implements Shape
 		
 		modelBuilder.part("tri", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).triangle(vinf3, vinf2, vinf1);
 		model = modelBuilder.end();
-		
-		if(world != null)
-			world.disposables.add(this);
 	}
 	
 	public Vector3 getPoint(Vector3 out, int num)
@@ -122,49 +108,40 @@ public class Triangle implements Shape
 	}
 	
 	@Override
-	public void dispose()
+	public btCollisionShape getCollisionShape()
 	{
-		model.dispose();
+		return colShape;
 	}
 	
-	public Material getMaterial()
+	public Material getMaterial(int side)
 	{
-		return model.nodes.get(0).parts.get(0).material;
+		if(model != null)
+			return model.nodes.get(0).parts.get(side).material;
+		else
+			return null;
 	}
 	
-	public Material setMaterial(Material mat)
+	public Material setMaterial(int side, Material mat)
 	{
-		model.nodes.get(0).parts.get(0).material = mat;
+		if(model != null)
+			model.nodes.get(0).parts.get(side).material = mat;
+		
 		return mat;
 	}
 	
-	public static class TriangleInstance extends ShapeInstance
+	@Override
+	public Shape disposeByWorld(World world)
 	{
-		public TriangleInstance(Triangle shape, float x, float y, float z)
-		{
-			this(shape, x, y, z, -1, 0);
-		}
+		world.disposables.add(this);
+		return this;
+	}
+	
+	@Override
+	public void dispose()
+	{
+		colShape.dispose();
 		
-		public TriangleInstance(Triangle shape, float x, float y, float z, int collisionFlags, float mass)
-		{
-			if(shape.model == null)
-			{
-				construct(shape.world, shape, null, shape.v1, shape.v2, shape.v3, collisionFlags, mass);
-				return;
-			}
-			
-			ModelInstance modelInst = new ModelInstance(shape.model);
-			modelInst.transform.setToTranslation(x, y, z);
-			construct(shape.world, shape, modelInst, shape.v1, shape.v2, shape.v3, collisionFlags, mass);
-		}
-		
-		private void construct(World world, Shape shape, ModelInstance modelInst, Vector3 v1, Vector3 v2, Vector3 v3, int collisionFlags, float mass)
-		{
-			btTriangleShape shapeCol = null;
-			if(collisionFlags != -1)
-				shapeCol = new btTriangleShape(v1, v2, v3);
-			
-			super.construct(world, shape, modelInst, shapeCol, collisionFlags, mass);
-		}
+		if(model != null)
+			model.dispose();
 	}
 }

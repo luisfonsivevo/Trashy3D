@@ -27,8 +27,7 @@ import com.badlogic.gdx.physics.bullet.dynamics.btRigidBody;
 import com.badlogic.gdx.physics.bullet.dynamics.btSequentialImpulseConstraintSolver;
 import com.badlogic.gdx.utils.Disposable;
 
-import jerbear.util3d.shapes.ShapeInstance;
-import jerbear.util3d.shapes.ShapeInstance.CollisionListener;
+import jerbear.util3d.ShapeInstance.CollisionListener;
 
 public class World
 {
@@ -74,7 +73,6 @@ public class World
 		contactListener.worlds.add(this);
 		
 		this.player = player;
-		player.setWorld(this);
 		addShape(player);
 	}
 
@@ -91,7 +89,7 @@ public class World
 			ShapeInstance shape = (ShapeInstance) iter.next();
 			
 			shapes.add(shape);
-			if(shape.getBody() != null)
+			if(shape.isCollision())
 				dynamicsWorld.addRigidBody(shape.getBody());
 			
 			iter.remove();
@@ -116,9 +114,14 @@ public class World
 		batch.end();
 	}
 	
-	public void addShape(ShapeInstance shape)
+	public ShapeInstance addShape(ShapeInstance shape)
 	{
+		if(shape.world != null)
+			throw new IllegalArgumentException("Shape has already been added to a world");
+		
+		shape.world = this;
 		shapesAdd.add(shape);
+		return shape;
 	}
 	
 	public ShapeInstance getShape(int id)
