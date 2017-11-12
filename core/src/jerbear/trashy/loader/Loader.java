@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.LinkedList;
 
+import jerbear.util3d.World;
+
 public class Loader
 {
-	public static LinkedList<Undoable> loadFile(File file) throws IOException
+	public static LinkedList<Undoable> loadFile(File file, World world) throws IOException
 	{
 		LinkedList<Undoable> returnVal = new LinkedList<Undoable>();
 		byte[] data = Files.readAllBytes(file.toPath());
@@ -36,7 +38,7 @@ public class Loader
 			switch(data[0])
 			{
 				case 0:
-					undo = new Undoable.AddShape(data);
+					undo = new Undoable.AddShape(world, data);
 					break;
 				default:
 					throw new IOException("Invalid serialization ID: " + data[0]);

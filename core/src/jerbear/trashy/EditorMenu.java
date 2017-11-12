@@ -53,11 +53,14 @@ public class EditorMenu implements Disposable
 	private MenuItem menuEditRedo;
 	private int asterisk = 0;
 	
+	private World world;
+	private FPSPlayer player;
 	private Tool tool;
 	
 	private boolean dialogOpen;
+	private boolean ignoreEscape;
 	
-	public EditorMenu()
+	public EditorMenu(World world, FPSPlayer player)
 	{
 		menuBar = new MenuBar();
 		menuBar.getTable().setPosition(0, Gdx.graphics.getHeight() - 12);
@@ -108,7 +111,10 @@ public class EditorMenu implements Disposable
 		menuTools.addItem(menuToolsGrid);
 		menuBar.addMenu(menuTools);
 		
-		tool = new Grid(Game.game().world, 5, 1);
+		this.world = world;
+		this.player = player;
+		
+		tool = new Grid(this, world, 5, 1);
 		Gdx.input.setInputProcessor(tool);
 		
 		menuFileNew.addListener(new ChangeListener()
@@ -192,7 +198,7 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				if(!(tool instanceof Grid))
-					tool = new Grid(Game.game().world, 5, 1); //defaults to box
+					tool = new Grid(EditorMenu.this, world, 5, 1); //defaults to box
 				else
 					((Grid) tool).setShape(GridShape.BOX);
 					
@@ -205,7 +211,7 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				if(!(tool instanceof Grid))
-					tool = new Grid(Game.game().world, 5, 1);
+					tool = new Grid(EditorMenu.this, world, 5, 1);
 				
 				((Grid) tool).setShape(GridShape.RAMP);
 			}
@@ -217,7 +223,7 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				if(!(tool instanceof Grid))
-					tool = new Grid(Game.game().world, 5, 1);
+					tool = new Grid(EditorMenu.this, world, 5, 1);
 				
 				((Grid) tool).setShape(GridShape.WALL);
 			}
@@ -229,7 +235,7 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				if(!(tool instanceof Grid))
-					tool = new Grid(Game.game().world, 5, 1);
+					tool = new Grid(EditorMenu.this, world, 5, 1);
 				
 				((Grid) tool).setShape(GridShape.TRIANGLE);
 			}
@@ -241,7 +247,7 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				if(!(tool instanceof Grid))
-					tool = new Grid(Game.game().world, 5, 1);
+					tool = new Grid(EditorMenu.this, world, 5, 1);
 				
 				((Grid) tool).setShape(GridShape.SPHERE);
 			}
@@ -253,7 +259,7 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				if(!(tool instanceof Grid))
-					tool = new Grid(Game.game().world, 5, 1);
+					tool = new Grid(EditorMenu.this, world, 5, 1);
 				
 				((Grid) tool).setShape(GridShape.CYLINDER);
 			}
@@ -265,7 +271,7 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				if(!(tool instanceof Grid))
-					tool = new Grid(Game.game().world, 5, 1);
+					tool = new Grid(EditorMenu.this, 	world, 5, 1);
 				
 				((Grid) tool).setShape(GridShape.CONE);
 			}
@@ -277,7 +283,7 @@ public class EditorMenu implements Disposable
 			public void changed(ChangeEvent event, Actor actor)
 			{
 				if(!(tool instanceof Grid))
-					tool = new Grid(Game.game().world, 5, 1);
+					tool = new Grid(EditorMenu.this, world, 5, 1);
 				
 				((Grid) tool).setShape(GridShape.CAPSULE);
 			}
@@ -288,30 +294,32 @@ public class EditorMenu implements Disposable
 	
 	public void draw()
 	{
-		if(Gdx.input.isKeyJustPressed(Keys.ALT_LEFT))
+		boolean ctrl = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);
+		//boolean alt = Gdx.input.isKeyPressed(Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Keys.ALT_RIGHT);
+		boolean shift = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT);
+		
+		if((Gdx.input.isKeyJustPressed(Keys.ALT_LEFT)))
 		{
 			if(Gdx.input.getInputProcessor() == tool)
 			{
 				Dialog.setFocus();
 				Gdx.input.setCursorCatched(false);
-				Game.game().player.pause = true;
+				player.pause = true;
 			}
 			else
 			{
 				Gdx.input.setInputProcessor(tool);
 				Gdx.input.setCursorCatched(true);
-				Game.game().player.pause = false;
+				player.pause = false;
 			}
 		}
-		
-		boolean ctrl = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);
-		boolean shift = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT);
 		
 		if(ctrl && Gdx.input.isKeyJustPressed(Keys.N))
 			newf(true, false);
 		
-		if(Gdx.input.isKeyJustPressed(Keys.ESCAPE))
-			exit();
+		System.out.println(dialogOpen);
+		if(Gdx.input.isKeyJustPressed(Keys.ESCAPE) && !dialogOpen && !ignoreEscape)
+			exit();	
 		
 		if(ctrl && Gdx.input.isKeyJustPressed(Keys.O))
 			openDialog(false);
@@ -328,6 +336,7 @@ public class EditorMenu implements Disposable
 		if(ctrl && shift && Gdx.input.isKeyJustPressed(Keys.Z) && !redos.isEmpty())
 			redo();
 		
+		ignoreEscape = false;
 		tool.draw();
 	}
 	
@@ -345,7 +354,6 @@ public class EditorMenu implements Disposable
 			
 			if(firstBox)
 			{
-				World world = Game.game().world;
 				undoAdd(new AddShape(world.addShape(new ShapeInstance(new Box(2, 1, 2, Color.RED).disposeByWorld(world), 0, -0.5f, 0, CollisionFlags.CF_STATIC_OBJECT, 0))));
 				Gdx.graphics.setTitle("*(Untitled) - Trashy 3D");
 			}
@@ -359,7 +367,7 @@ public class EditorMenu implements Disposable
 		}
 		else
 		{
-			popup(new YesNoDialog("Trashy3D", "Save changes to \"" + (save == null ? "Untitled" : save.getName()) + "\"", true)
+			popup(new YesNoDialog("Trashy3D", "Save changes to \"" + (save == null ? "Untitled" : save.getName()) + "\"?", true)
 			{
 				@Override
 				public void onClose(int answer)
@@ -394,7 +402,7 @@ public class EditorMenu implements Disposable
 		}
 		else
 		{
-			popup(new YesNoDialog("Trashy3D", "Save changes to \"" + (save == null ? "Untitled" : save.getName()) + "\"", true)
+			popup(new YesNoDialog("Trashy3D", "Save changes to \"" + (save == null ? "Untitled" : save.getName()) + "\"?", true)
 			{
 				@Override
 				public void onClose(int answer)
@@ -460,6 +468,7 @@ public class EditorMenu implements Disposable
 				public void onClose(int answer)
 				{
 					dialogOpen = false;
+					ignoreEscape = true;
 					
 					if(answer == 0)
 					{
@@ -487,7 +496,7 @@ public class EditorMenu implements Disposable
 		
 		try
 		{
-			LinkedList<Undoable> newUndos = Loader.loadFile(file);
+			LinkedList<Undoable> newUndos = Loader.loadFile(file, world);
 			for(int i = 0; i < newUndos.size() - 1; i++)
 			{
 				undos.add(newUndos.get(i));
@@ -496,16 +505,25 @@ public class EditorMenu implements Disposable
 			undoAdd(newUndos.getLast());
 			
 			save = file;
+			asterisk = undos.size();
+			
 			Gdx.graphics.setTitle(save.getName() + " - Trashy 3D");
 			menuFileSave.setDisabled(true);
 		}
 		catch(IOException oops)
 		{
-			popup(new ExceptionDialog(oops, "Failed to open " + file.getName()));
+			popup(new ExceptionDialog(oops, "Failed to open " + file.getName())
+			{
+				@Override
+				public void close()
+				{
+					super.close();
+					dialogOpen = false;
+				}
+			});
+			
 			newf(true, true);
 		}
-		
-		asterisk = undos.size();
 	}
 	
 	public void saveAs(SaveEvent event)
@@ -532,6 +550,7 @@ public class EditorMenu implements Disposable
 			public void canceled()
 			{
 				dialogOpen = false;
+				ignoreEscape = true;
 			}
 		});
 		
@@ -564,7 +583,15 @@ public class EditorMenu implements Disposable
 		}
 		catch(IOException oops)
 		{
-			popup(new ExceptionDialog(oops, "Failed to save " + save.getName()));
+			popup(new ExceptionDialog(oops, "Failed to save " + save.getName())
+			{
+				@Override
+				public void close()
+				{
+					super.close();
+					dialogOpen = false;
+				}
+			});
 		}
 		
 		asterisk = undos.size();
@@ -589,7 +616,7 @@ public class EditorMenu implements Disposable
 	
 	public void undo()
 	{
-		undos.getLast().undo();
+		undos.getLast().undo(world);
 		redos.add(undos.getLast());
 		undos.removeLast();
 		menuEditRedo.setDisabled(false);
@@ -609,7 +636,7 @@ public class EditorMenu implements Disposable
 	
 	public void redo()
 	{
-		Undoable copy = redos.getLast().redo();
+		Undoable copy = redos.getLast().redo(world);
 		undos.add(copy);
 		redos.removeLast();
 		menuEditUndo.setDisabled(false);
@@ -642,7 +669,7 @@ public class EditorMenu implements Disposable
 		Dialog.setFocus();
 		
 		Gdx.input.setCursorCatched(false);
-		Game.game().player.pause = true;
+		player.pause = true;
 		dialogOpen = true;
 	}
 	
@@ -655,7 +682,7 @@ public class EditorMenu implements Disposable
 		Dialog.setFocus();
 		
 		Gdx.input.setCursorCatched(false);
-		Game.game().player.pause = true;
+		player.pause = true;
 		dialogOpen = true;
 	}
 	

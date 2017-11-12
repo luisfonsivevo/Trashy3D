@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 
 public abstract class YesNoDialog extends Dialog
@@ -17,8 +16,6 @@ public abstract class YesNoDialog extends Dialog
 		TextButton yes = new TextButton("Yes", Dialog.getSkin());
 		TextButton no = new TextButton("No", Dialog.getSkin());
 		TextButton cancel = new TextButton("Cancel", Dialog.getSkin());
-		
-		final Window window = getWindow();
 		
 		//first row - label
 		window.row();

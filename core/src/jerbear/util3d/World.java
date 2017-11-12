@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.environment.DirectionalShadowLight;
+import com.badlogic.gdx.graphics.g3d.utils.DepthShaderProvider;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.AllHitsRayResultCallback;
 import com.badlogic.gdx.physics.bullet.collision.ClosestRayResultCallback;
@@ -29,15 +31,18 @@ import com.badlogic.gdx.utils.Disposable;
 
 import jerbear.util3d.ShapeInstance.CollisionListener;
 
+@SuppressWarnings("deprecation") //for shadows
 public class World
 {
 	private static Vector3 tmp = new Vector3();
 	private static WorldContactListener contactListener;
 	
-	public final ModelBatch batch;
+	public final ModelBatch batch, shadowBatch;
 	public final Player player;
 	public final Environment env;
 	public final btDynamicsWorld dynamicsWorld;
+	
+	private DirectionalShadowLight shadowLight;
 	
 	public final ArrayList<Disposable> disposables;
 	private ArrayList<ShapeInstance> shapes;
@@ -51,10 +56,13 @@ public class World
 	public World(Player player, float gravity)
 	{
 		batch = new ModelBatch();
+		shadowBatch = new ModelBatch(new DepthShaderProvider());
+		shadowLight = new DirectionalShadowLight(4096, 4096, 30, 30f, 1, 100);
 		
 		env = new Environment();
-		env.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1.0f));
-		env.add(new DirectionalLight().set(0.8f, 0.8f, 0.8f, -1.0f, -0.8f, -0.2f));
+		env.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1));
+		env.add(shadowLight.set(0.8f, 0.8f, 0.8f, -1.0f, -0.8f, -0.2f));
+		env.shadowMap = shadowLight;
 		
 		shapes = new ArrayList<ShapeInstance>();
 		shapesAdd = new ArrayList<ShapeInstance>();
@@ -76,13 +84,15 @@ public class World
 		addShape(player);
 	}
 
-	public void draw()
+	public void draw(Color bg)
 	{
 		Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+		Gdx.gl.glClearColor(bg.r, bg.g, bg.b, bg.a);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-
+		
 		dynamicsWorld.stepSimulation(Gdx.graphics.getDeltaTime(), 5, 1f / 60f);
 		
+		//add new shapes
 		Iterator<ShapeInstance> iter = shapesAdd.iterator();
 		while(iter.hasNext())
 		{
@@ -95,6 +105,18 @@ public class World
 			iter.remove();
 		}
 		
+		//shadows
+		iter = shapes.iterator();
+		shadowLight.begin(Vector3.Zero, player.getCamera().direction);
+		shadowBatch.begin(shadowLight.getCamera());
+		while(iter.hasNext())
+		{
+			((ShapeInstance) iter.next()).drawShadow(shadowBatch);
+		}
+		shadowBatch.end();
+		shadowLight.end();
+		
+		//rendering, events, and disposal
 		iter = shapes.iterator();
 		batch.begin(player.getCamera());
 		while(iter.hasNext())
@@ -218,6 +240,8 @@ public class World
 		for(ShapeInstance shape : shapes)
 			shape.dispose();
 		
+		shadowLight.dispose();
+		shadowBatch.dispose();
 		batch.dispose();
 	}
 	

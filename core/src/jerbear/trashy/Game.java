@@ -15,30 +15,12 @@ import jerbear.util3d.World;
 
 public class Game extends ApplicationAdapter
 {
-	private static Game singleton;
-	
-	public EditorMenu menu;
-	public World world;
-	public FPSPlayer player;
+	private EditorMenu menu;
+	private World world;
+	private FPSPlayer player;
 	
 	private SpriteBatch batch;
 	private Texture crshair;
-	
-	public static Game launch()
-	{
-		if(singleton != null)
-			singleton.dispose();
-		
-		singleton = new Game();
-		return singleton;
-	}
-	
-	public static Game game()
-	{
-		return singleton;
-	}
-	
-	private Game() {}
 	
 	@Override
 	public void create()
@@ -49,7 +31,7 @@ public class Game extends ApplicationAdapter
 		
 		player = new FPSPlayer(0.5f, 2, 0.5f, 0, 1, 0, 1.5f, 0, 1);
 		world = new World(player, 15);
-		menu = new EditorMenu();
+		menu = new EditorMenu(world, player);
 		
 		batch = new SpriteBatch();
 		
@@ -66,12 +48,12 @@ public class Game extends ApplicationAdapter
 	@Override
 	public void render()
 	{
-		world.draw();
+		world.draw(Color.BLACK);
 		
 		batch.begin();
 		batch.draw(crshair, (Gdx.graphics.getWidth() - crshair.getWidth()) / 2, (Gdx.graphics.getHeight() - crshair.getHeight()) / 2);
 		batch.end();
-
+		
 		menu.draw();
 		Dialog.draw();
 	}

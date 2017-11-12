@@ -10,7 +10,6 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.utils.Align;
 
@@ -36,7 +35,6 @@ public class ExceptionDialog extends Dialog
 		pane.setOverscroll(false, false);
 		pane.layout();
 		
-		final Window window = getWindow();
 		window.getTitleTable().add(x);
 		
 		//first row - label

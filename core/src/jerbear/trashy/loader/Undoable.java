@@ -10,7 +10,6 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 
-import jerbear.trashy.Game;
 import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
 import jerbear.util3d.shapes.Box;
@@ -24,8 +23,8 @@ import jerbear.util3d.shapes.Triangle;
 
 public interface Undoable
 {
-	public void undo();
-	public Undoable redo();
+	public void undo(World world);
+	public Undoable redo(World world);
 	public byte[] serialize();
 	
 	public class AddShape implements Undoable
@@ -37,14 +36,13 @@ public interface Undoable
 		private static Matrix4 tmpM = new Matrix4();
 		
 		private ShapeInstance inst;
-		private byte[] backup;
 		
 		public AddShape(ShapeInstance inst)
 		{
 			this.inst = inst;
 		}
 		
-		public AddShape(byte[] data) throws IOException
+		public AddShape(World world, byte[] data) throws IOException
 		{
 			try
 			{
@@ -60,7 +58,6 @@ public interface Undoable
 				
 				Color col = new Color(buf.getInt());
 				
-				World world = Game.game().world;
 				byte type = buf.get();
 				switch(type)
 				{
@@ -120,17 +117,16 @@ public interface Undoable
 			}
 		}
 		
-		public void undo()
+		public void undo(World world)
 		{
-			backup = serialize();
 			inst.setDispose();
 		}
 		
-		public Undoable redo()
+		public Undoable redo(World world)
 		{
 			try
 			{
-				return new AddShape(backup);
+				return new AddShape(world, serialize());
 			}
 			catch(IOException oops)
 			{

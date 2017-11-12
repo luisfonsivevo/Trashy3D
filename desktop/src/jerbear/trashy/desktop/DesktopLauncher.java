@@ -1,4 +1,3 @@
-
 package jerbear.trashy.desktop;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
@@ -17,6 +16,6 @@ public class DesktopLauncher
 		config.height = 600;
 		config.resizable = false;
 		
-		new LwjglApplication(Game.launch(), config);
+		new LwjglApplication(new Game(), config);
 	}
 }

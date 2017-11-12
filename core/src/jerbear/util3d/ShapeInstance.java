@@ -248,6 +248,12 @@ public class ShapeInstance implements Disposable
 		return this;
 	}
 	
+	public void drawShadow(ModelBatch shadowBatch)
+	{
+		if(isModel)
+			shadowBatch.render(modelInst);
+	}
+	
 	public void draw(ModelBatch batch, Environment env)
 	{
 		if(isModel)

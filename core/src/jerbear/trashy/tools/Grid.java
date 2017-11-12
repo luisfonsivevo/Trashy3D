@@ -13,7 +13,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 
-import jerbear.trashy.Game;
+import jerbear.trashy.EditorMenu;
 import jerbear.trashy.loader.Undoable.AddShape;
 import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
@@ -32,12 +32,14 @@ public class Grid extends Tool
 	private static Vector3 tmp3 = new Vector3();
 	private static Matrix4 tmpM = new Matrix4();
 	
-	public World world;
 	public int size;
 	public float zoom;
 	
 	public Color color = Color.RED;
 	public boolean flipAxis;
+	
+	private EditorMenu menu;
+	private World world;
 	
 	private ShapeRenderer rend;
 	private GridShape shape = GridShape.BOX;
@@ -55,8 +57,9 @@ public class Grid extends Tool
 		BOX, RAMP, WALL, TRIANGLE, SPHERE, CYLINDER, CONE, CAPSULE
 	}
 	
-	public Grid(World world, int size, float zoom)
+	public Grid(EditorMenu menu, World world, int size, float zoom)
 	{
+		this.menu = menu;
 		this.world = world;
 		this.size = size;
 		this.zoom = zoom;
@@ -382,7 +385,7 @@ public class Grid extends Tool
 								{
 									ShapeInstance box = world.addShape(new ShapeInstance(new Box(width, height, depth, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 									
-									Game.game().menu.undoAdd(new AddShape(box));
+									menu.undoAdd(new AddShape(box));
 									resetPoints();
 								}
 								
@@ -401,7 +404,7 @@ public class Grid extends Tool
 										ramp = world.addShape(new ShapeInstance(new Rectangle(lengthramp, pyth, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 										ramp.setTransform(ramp.getTransform(tmpM).rotateRad(-1, 0, 0, (float) Math.atan2(selected.y - first.y, selected.z - first.z)));
 										
-										Game.game().menu.undoAdd(new AddShape(ramp));
+										menu.undoAdd(new AddShape(ramp));
 										resetPoints();
 									}
 								}
@@ -415,7 +418,7 @@ public class Grid extends Tool
 										ramp = world.addShape(new ShapeInstance(new Rectangle(pyth, lengthramp, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 										ramp.setTransform(ramp.getTransform(tmpM).rotateRad(0, 0, 1, (float) Math.atan2(selected.y - first.y, selected.x - first.x)));
 										
-										Game.game().menu.undoAdd(new AddShape(ramp));
+										menu.undoAdd(new AddShape(ramp));
 										resetPoints();
 									}
 								}
@@ -430,7 +433,7 @@ public class Grid extends Tool
 									ShapeInstance wall = world.addShape(new ShapeInstance(new Rectangle(lengthwall, heightwall, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 									wall.setTransform(wall.getTransform(tmpM).rotate(Vector3.X, 90).rotateRad(Vector3.Z, (float) Math.atan2(selected.z - first.z, selected.x - first.x)));
 									
-									Game.game().menu.undoAdd(new AddShape(wall));
+									menu.undoAdd(new AddShape(wall));
 									resetPoints();
 								}
 								
@@ -449,7 +452,7 @@ public class Grid extends Tool
 										tmp1.set(first).add(second).add(selected).scl(1 / 3f); //offset by the centroid to give the triangle a center of rotation
 										ShapeInstance tri = world.addShape(new ShapeInstance(new Triangle(first.sub(tmp1), second.sub(tmp1), selected.sub(tmp1), color).disposeByWorld(world), tmp1, CollisionFlags.CF_STATIC_OBJECT, 0));
 										
-										Game.game().menu.undoAdd(new AddShape(tri));
+										menu.undoAdd(new AddShape(tri));
 										resetPoints();
 									}
 								}
@@ -460,7 +463,7 @@ public class Grid extends Tool
 								{
 									ShapeInstance sphere = world.addShape(new ShapeInstance(new Sphere(radiussphere, 10, 10, color).disposeByWorld(world), first, CollisionFlags.CF_STATIC_OBJECT, 0));
 									
-									Game.game().menu.undoAdd(new AddShape(sphere));
+									menu.undoAdd(new AddShape(sphere));
 									resetPoints();
 								}
 								
@@ -483,7 +486,7 @@ public class Grid extends Tool
 									else if(selected.z - first.z != 0)
 										cyl.setTransform(cyl.getTransform(tmpM).rotate(Vector3.X, 90));
 									
-									Game.game().menu.undoAdd(new AddShape(cyl));
+									menu.undoAdd(new AddShape(cyl));
 									resetPoints();
 								}
 								break;
@@ -507,7 +510,7 @@ public class Grid extends Tool
 									else if(selected.y < first.y)
 										cone.setTransform(cone.getTransform(tmpM).rotate(Vector3.X, 180));
 									
-									Game.game().menu.undoAdd(new AddShape(cone));
+									menu.undoAdd(new AddShape(cone));
 									resetPoints();
 								}
 								break;
@@ -529,7 +532,7 @@ public class Grid extends Tool
 									else if(selected.z - first.z != 0)
 										cap.setTransform(cap.getTransform(tmpM).rotate(Vector3.X, 90));
 									
-									Game.game().menu.undoAdd(new AddShape(cap));
+									menu.undoAdd(new AddShape(cap));
 									resetPoints();
 								}
 								break;

@@ -20,7 +20,7 @@ public abstract class Dialog
 	private static String str;
 	private static GlyphLayout strSize = new GlyphLayout();
 	
-	private Window window;
+	protected final Window window;
 	private boolean open = false;
 	
 	public static Skin getSkin()
@@ -67,6 +67,11 @@ public abstract class Dialog
 	public static boolean isDialogOpen()
 	{
 		return stage.getActors().size != 0;
+	}
+	
+	public static void closeAll()
+	{
+		stage.clear();
 	}
 	
 	public static float getStringWidth(BitmapFont font, String str)
@@ -118,10 +123,5 @@ public abstract class Dialog
 	{
 		window.remove();
 		open = false;
-	}
-	
-	protected Window getWindow()
-	{
-		return window;
 	}
 }
