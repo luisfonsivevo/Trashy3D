@@ -62,14 +62,16 @@ public class Cylinder implements Shape
 		return colShape;
 	}
 	
-	public Material getMaterial()
+	@Override
+	public Material getMaterial(int part)
 	{
-		return model.nodes.get(0).parts.get(0).material;
+		return model.nodes.get(0).parts.get(part).material;
 	}
 	
-	public Material setMaterial(Material mat)
+	@Override
+	public Material setMaterial(int part, Material mat)
 	{
-		model.nodes.get(0).parts.get(0).material = mat;
+		model.nodes.get(0).parts.get(part).material = mat;
 		return mat;
 	}
 	

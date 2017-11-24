@@ -88,18 +88,20 @@ public class Rectangle implements Shape
 		return colShape;
 	}
 	
-	public Material getMaterial(int side)
+	@Override
+	public Material getMaterial(int part)
 	{
 		if(model != null)
-			return model.nodes.get(0).parts.get(side).material;
+			return model.nodes.get(0).parts.get(part).material;
 		else
 			return null;
 	}
 	
-	public Material setMaterial(int side, Material mat)
+	@Override
+	public Material setMaterial(int part, Material mat)
 	{
 		if(model != null)
-			model.nodes.get(0).parts.get(side).material = mat;
+			model.nodes.get(0).parts.get(part).material = mat;
 		
 		return mat;
 	}

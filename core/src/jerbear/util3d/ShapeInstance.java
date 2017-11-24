@@ -1,6 +1,7 @@
 package jerbear.util3d;
 
 import com.badlogic.gdx.graphics.g3d.Environment;
+import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.Matrix4;
@@ -18,9 +19,9 @@ import jerbear.util3d.shapes.Shape;
 public class ShapeInstance implements Disposable
 {
 	public static final int defaultCollisionFlags = CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK;
+	public static int curID = 0; //used for collision detection (userval), but can be used as general purpose ID. CHANGE WITH CAUTION
 	
 	private static Vector3 tmp = new Vector3();
-	private static int curID = 0; //used for collision detection (userval)
 	
 	private boolean disposed = false;
 	private int id;
@@ -230,6 +231,22 @@ public class ShapeInstance implements Disposable
 	public ModelInstance getModelInstance()
 	{
 		return modelInst;
+	}
+	
+	public Material getMaterial(int part)
+	{
+		if(isModel)
+			return modelInst.nodes.get(0).parts.get(part).material;
+		else
+			return null;
+	}
+	
+	public Material setMaterial(int part, Material mat)
+	{
+		if(isModel)
+			modelInst.nodes.get(0).parts.get(part).material = mat;
+		
+		return mat;
 	}
 	
 	public btRigidBody getBody()

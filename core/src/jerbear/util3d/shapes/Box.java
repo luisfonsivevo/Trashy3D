@@ -59,7 +59,7 @@ public class Box implements Shape
 		//front 
 		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
 				-width / 2f, -height / 2f, depth / 2f,
-				width / 2f, -height / 2f, depth / 2f, 
+				width / 2f, -height / 2f, depth / 2f,
 				width / 2f, height / 2f, depth / 2f,
 				-width / 2f, height / 2f, depth / 2f, 0, 0, 1);
 		
@@ -118,18 +118,20 @@ public class Box implements Shape
 		return colShape;
 	}
 	
-	Material getMaterial(int side)
+	@Override
+	public Material getMaterial(int part)
 	{
 		if(model != null)
-			return model.nodes.get(0).parts.get(side).material;
+			return model.nodes.get(0).parts.get(part).material;
 		else
 			return null;
 	}
 	
-	public Material setMaterial(int side, Material mat)
+	@Override
+	public Material setMaterial(int part, Material mat)
 	{
 		if(model != null)
-			model.nodes.get(0).parts.get(side).material = mat;
+			model.nodes.get(0).parts.get(part).material = mat;
 		
 		return mat;
 	}

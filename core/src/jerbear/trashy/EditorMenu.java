@@ -31,6 +31,7 @@ import jerbear.trashy.loader.Undoable;
 import jerbear.trashy.loader.Undoable.AddShape;
 import jerbear.trashy.tools.Grid;
 import jerbear.trashy.tools.Grid.GridShape;
+import jerbear.trashy.tools.PaintCan;
 import jerbear.trashy.tools.Tool;
 import jerbear.util2d.dialog.Dialog;
 import jerbear.util2d.dialog.ExceptionDialog;
@@ -99,6 +100,7 @@ public class EditorMenu implements Disposable
 		MenuItem menuToolsGridCylinder = new MenuItem("Cylinder");
 		MenuItem menuToolsGridCone = new MenuItem("Cone");
 		MenuItem menuToolsGridCapsule = new MenuItem("Capsule");
+		MenuItem menuToolsPaint = new MenuItem("Paint Can");
 		menuToolsGridSub.addItem(menuToolsGridBox);
 		menuToolsGridSub.addItem(menuToolsGridRamp);
 		menuToolsGridSub.addItem(menuToolsGridWall);
@@ -109,6 +111,7 @@ public class EditorMenu implements Disposable
 		menuToolsGridSub.addItem(menuToolsGridCapsule);
 		menuToolsGrid.setSubMenu(menuToolsGridSub);
 		menuTools.addItem(menuToolsGrid);
+		menuTools.addItem(menuToolsPaint);
 		menuBar.addMenu(menuTools);
 		
 		this.world = world;
@@ -289,6 +292,16 @@ public class EditorMenu implements Disposable
 			}
 		});
 		
+		menuToolsPaint.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				if(!(tool instanceof PaintCan))
+					tool = new PaintCan(EditorMenu.this, world, Color.PINK);
+			}
+		});
+		
 		Dialog.addWidget(menuBar.getTable());
 	}
 	
@@ -317,7 +330,6 @@ public class EditorMenu implements Disposable
 		if(ctrl && Gdx.input.isKeyJustPressed(Keys.N))
 			newf(true, false);
 		
-		System.out.println(dialogOpen);
 		if(Gdx.input.isKeyJustPressed(Keys.ESCAPE) && !dialogOpen && !ignoreEscape)
 			exit();	
 		

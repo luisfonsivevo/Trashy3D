@@ -1,6 +1,7 @@
 package jerbear.util3d;
 
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 
 import com.badlogic.gdx.Gdx;
@@ -57,7 +58,7 @@ public class World
 	{
 		batch = new ModelBatch();
 		shadowBatch = new ModelBatch(new DepthShaderProvider());
-		shadowLight = new DirectionalShadowLight(4096, 4096, 30, 30f, 1, 100);
+		shadowLight = new DirectionalShadowLight(8192, 8192, 30, 30f, 1, 100);
 		
 		env = new Environment();
 		env.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1));
@@ -92,7 +93,7 @@ public class World
 		
 		dynamicsWorld.stepSimulation(Gdx.graphics.getDeltaTime(), 5, 1f / 60f);
 		
-		//add new shapes
+		//add new shapes if any
 		Iterator<ShapeInstance> iter = shapesAdd.iterator();
 		while(iter.hasNext())
 		{
@@ -122,18 +123,24 @@ public class World
 		while(iter.hasNext())
 		{
 			ShapeInstance shape = (ShapeInstance) iter.next();
-			
+			//System.out.println(shape.getID());
 			shape.draw(batch, env);
+			System.out.println(shape.getClass().getSimpleName());
 			if(shape.isDisposed())
 			{
 				if(shape.isCollision())
+				{
+					System.out.println("it ded");
 					dynamicsWorld.removeRigidBody(shape.getBody());
+				}
 				
 				shape.dispose();
 				iter.remove();
 			}
 		}
 		batch.end();
+		
+		//System.out.println();
 	}
 	
 	public ShapeInstance addShape(ShapeInstance shape)
@@ -141,8 +148,24 @@ public class World
 		if(shape.world != null)
 			throw new IllegalArgumentException("Shape has already been added to a world");
 		
+		if(shape.isDisposed())
+			throw new IllegalArgumentException("Shape is already disposed");
+		
 		shape.world = this;
-		shapesAdd.add(shape);
+		
+		try
+		{
+			shapes.add(shape);
+			if(shape.isCollision())
+				dynamicsWorld.addRigidBody(shape.getBody());
+		}
+		catch(ConcurrentModificationException oops)
+		{
+			//wait until the start of the next frame to add this shape
+			//(currently we are in the draw() method)
+			shapesAdd.add(shape);
+		}
+		
 		return shape;
 	}
 	
@@ -150,7 +173,7 @@ public class World
 	{
 		for(ShapeInstance shape : shapes)
 		{
-			if(shape.getID() == id)
+			if(shape.getID() == id && !shape.isDisposed())
 				return shape;
 		}
 		
@@ -256,6 +279,7 @@ public class World
 			{
 				ShapeInstance col0 = world.getShape(userValue0);
 				ShapeInstance col1 = world.getShape(userValue1);
+				System.out.println(col0 + " " + col1);
 				CollisionListener listen0 = col0.getCollisionListener();
 				CollisionListener listen1 = col1.getCollisionListener();
 				

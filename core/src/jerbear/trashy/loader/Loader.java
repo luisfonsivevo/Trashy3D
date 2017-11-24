@@ -13,6 +13,7 @@ public class Loader
 	{
 		LinkedList<Undoable> returnVal = new LinkedList<Undoable>();
 		byte[] data = Files.readAllBytes(file.toPath());
+		byte[] newdata;
 		int remaining = data.length;
 		
 		if(remaining >= 3)
@@ -20,7 +21,10 @@ public class Loader
 			if(data[0] == 'T' && data[1] == '3' && data[2] == 'D')
 			{
 				remaining -= 3;
-				System.arraycopy(data, 3, data, 0, remaining);
+				
+				newdata = new byte[remaining];
+				System.arraycopy(data, 3, newdata, 0, remaining);
+				data = newdata;
 			}
 			else
 			{
@@ -34,20 +38,27 @@ public class Loader
 		
 		while(remaining > 0)
 		{
+			System.out.println(remaining);
 			Undoable undo;
 			switch(data[0])
 			{
 				case 0:
 					undo = new Undoable.AddShape(world, data);
 					break;
+				case 1:
+					undo = new Undoable.PaintShape(world, data);
+					break;
 				default:
 					throw new IOException("Invalid serialization ID: " + data[0]);
 			}
-
+			
 			returnVal.add(undo);
 			byte[] serialization = undo.serialize();
 			remaining -= serialization.length;
-			System.arraycopy(data, serialization.length, data, 0, remaining);
+			
+			newdata = new byte[remaining];
+			System.arraycopy(data, serialization.length, newdata, 0, remaining);
+			data = newdata;
 		}
 		
 		return returnVal;

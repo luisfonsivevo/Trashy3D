@@ -146,6 +146,7 @@ public class FPSPlayer extends Player implements CollisionListener
 		else
 		{
 			getBody().setLinearVelocity(tmp2);
+			//getBody().applyCentralImpulse(tmp2);
 			getPosition(tmp2);
 		}
 		

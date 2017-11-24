@@ -49,12 +49,12 @@ public class Game extends ApplicationAdapter
 	public void render()
 	{
 		world.draw(Color.BLACK);
+		menu.draw();
 		
 		batch.begin();
 		batch.draw(crshair, (Gdx.graphics.getWidth() - crshair.getWidth()) / 2, (Gdx.graphics.getHeight() - crshair.getHeight()) / 2);
 		batch.end();
 		
-		menu.draw();
 		Dialog.draw();
 	}
 	

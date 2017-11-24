@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
@@ -50,13 +51,13 @@ public interface Undoable
 				if(buf.get() != id)
 					throw new IllegalStateException("Serialization does not match class ID");
 				
+				ShapeInstance.curID = buf.getInt();
+				
 				Matrix4 transform = new Matrix4();
 				for(int i = 0; i < 16; i++)
 				{
 					transform.val[i] = buf.getFloat();
 				}
-				
-				Color col = new Color(buf.getInt());
 				
 				byte type = buf.get();
 				switch(type)
@@ -66,44 +67,44 @@ public interface Undoable
 						float heightbox = buf.getFloat();
 						float depthbox = buf.getFloat();
 						
-						inst = world.addShape(new ShapeInstance(new Box(widthbox, heightbox, depthbox, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
+						inst = world.addShape(new ShapeInstance(new Box(widthbox, heightbox, depthbox, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 1:
 						float radiuscap = buf.getFloat();
 						float heightcap = buf.getFloat();
 						
-						inst = world.addShape(new ShapeInstance(new Capsule(radiuscap, heightcap, 10, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
+						inst = world.addShape(new ShapeInstance(new Capsule(radiuscap, heightcap, 10, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 2:
 						float radiuscone = buf.getFloat();
 						float heightcone = buf.getFloat();
 						
-						inst = world.addShape(new ShapeInstance(new Cone(radiuscone, heightcone, 10, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
+						inst = world.addShape(new ShapeInstance(new Cone(radiuscone, heightcone, 10, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 3:
 						float widthcyl = buf.getFloat();
 						float heightcyl = buf.getFloat();
 						float depthcyl = buf.getFloat();
 						
-						inst = world.addShape(new ShapeInstance(new Cylinder(widthcyl, heightcyl, depthcyl, 10, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
+						inst = world.addShape(new ShapeInstance(new Cylinder(widthcyl, heightcyl, depthcyl, 10, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 4:
 						float widthrect = buf.getFloat();
 						float depthrect = buf.getFloat();
 						
-						inst = world.addShape(new ShapeInstance(new Rectangle(widthrect, depthrect, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
+						inst = world.addShape(new ShapeInstance(new Rectangle(widthrect, depthrect, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 5:
 						float radiussph = buf.getFloat();
 						
-						inst = world.addShape(new ShapeInstance(new Sphere(radiussph, 10, 10, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
+						inst = world.addShape(new ShapeInstance(new Sphere(radiussph, 10, 10, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 6:
 						Vector3 v1 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
 						Vector3 v2 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
 						Vector3 v3 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
 						
-						inst = world.addShape(new ShapeInstance(new Triangle(v1, v2, v3, col).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
+						inst = world.addShape(new ShapeInstance(new Triangle(v1, v2, v3, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					default:
 						throw new IllegalArgumentException("Invalid shape ID: " + type);
@@ -130,7 +131,7 @@ public interface Undoable
 			}
 			catch(IOException oops)
 			{
-				//THIS SHOULD NEVER HAPPEN (backup is always a valid byte array)
+				//THIS SHOULD NEVER HAPPEN (serialize() is always a valid byte array)
 				return null;
 			}
 		}
@@ -140,16 +141,15 @@ public interface Undoable
 			ByteBuffer buf = ByteBuffer.allocate(maxSize).order(ByteOrder.LITTLE_ENDIAN);
 			buf.put(id);
 			
-			Shape shape = inst.getShape();
+			buf.putInt(inst.getID());
 			
 			float[] transform = inst.getTransform(tmpM).val;
 			for(int i = 0; i < 16; i++)
 			{
 				buf.putFloat(transform[i]);
 			}
-			
-			buf.putInt(Color.rgba8888(((ColorAttribute) (inst.getModelInstance().nodes.get(0).parts.get(0).material.get(ColorAttribute.Diffuse))).color));
-			
+
+			Shape shape = inst.getShape();
 			if(shape instanceof Box)
 			{
 				buf.put((byte) 0);
@@ -221,11 +221,80 @@ public interface Undoable
 				throw new IllegalArgumentException("Can't serialize shape: " + shape.getClass().getName());
 			}
 			
-			byte[] returnVal = new byte[buf.position()];
-			buf.rewind();
-			buf.get(returnVal);
+			return buf.array();
+		}
+	}
+	
+	//TODO can only save/load colored materials
+	public class PaintShape implements Undoable
+	{
+		public static final byte id = (byte) 1;
+		public static final int maxSize = 13;
+		
+		private ShapeInstance inst;
+		private int part;
+		private Material mat, matPrv;
+		
+		public PaintShape(ShapeInstance inst, int part, Material mat, Material matPrv)
+		{
+			this.inst = inst;
+			this.part = part;
+			this.mat = mat;
+			this.matPrv = matPrv;
+		}
+		
+		public PaintShape(World world, byte[] data) throws IOException
+		{
+			try
+			{
+				ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+				if(buf.get() != id)
+					throw new IllegalStateException("Serialization does not match class ID");
+				
+				inst = world.getShape(buf.getInt());
+				part = buf.getInt();
+				mat = new Material(ColorAttribute.createDiffuse(new Color(buf.getInt())));
+				
+				matPrv = inst.getMaterial(part);
+				inst.setMaterial(part, mat);
+			}
+			catch(Exception oops)
+			{
+				throw new IOException("Invalid serialization of PaintShape", oops);
+			}
+		}
+		
+		@Override
+		public void undo(World world)
+		{
+			inst.setMaterial(part, matPrv);
+		}
+		
+		@Override
+		public Undoable redo(World world)
+		{
+			try
+			{
+				return new PaintShape(world, serialize());
+			}
+			catch(IOException oops)
+			{
+				//THIS SHOULD NEVER HAPPEN (serialize() is always a valid byte array)
+				return null;
+			}
+		}
+		
+		@Override
+		public byte[] serialize()
+		{
+			ByteBuffer buf = ByteBuffer.allocate(maxSize).order(ByteOrder.LITTLE_ENDIAN);
+			buf.put(id);
 			
-			return returnVal;
+			buf.putInt(inst.getID());
+			buf.putInt(part);
+			buf.putInt(Color.rgba8888(((ColorAttribute) mat.get(ColorAttribute.Diffuse)).color));
+			
+			return buf.array();
 		}
 	}
 }
