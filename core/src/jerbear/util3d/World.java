@@ -58,7 +58,7 @@ public class World
 	{
 		batch = new ModelBatch();
 		shadowBatch = new ModelBatch(new DepthShaderProvider());
-		shadowLight = new DirectionalShadowLight(8192, 8192, 30, 30f, 1, 100);
+		shadowLight = new DirectionalShadowLight(8192, 8192, 30, 30, 1, 100);
 		
 		env = new Environment();
 		env.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1));
@@ -123,24 +123,18 @@ public class World
 		while(iter.hasNext())
 		{
 			ShapeInstance shape = (ShapeInstance) iter.next();
-			//System.out.println(shape.getID());
 			shape.draw(batch, env);
-			System.out.println(shape.getClass().getSimpleName());
+			
 			if(shape.isDisposed())
 			{
 				if(shape.isCollision())
-				{
-					System.out.println("it ded");
 					dynamicsWorld.removeRigidBody(shape.getBody());
-				}
 				
 				shape.dispose();
 				iter.remove();
 			}
 		}
 		batch.end();
-		
-		//System.out.println();
 	}
 	
 	public ShapeInstance addShape(ShapeInstance shape)
@@ -279,7 +273,10 @@ public class World
 			{
 				ShapeInstance col0 = world.getShape(userValue0);
 				ShapeInstance col1 = world.getShape(userValue1);
-				System.out.println(col0 + " " + col1);
+				
+				if(col0 == null || col1 == null)
+					return true;
+				
 				CollisionListener listen0 = col0.getCollisionListener();
 				CollisionListener listen1 = col1.getCollisionListener();
 				

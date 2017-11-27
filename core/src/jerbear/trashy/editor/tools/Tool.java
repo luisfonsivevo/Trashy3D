@@ -1,4 +1,4 @@
-package jerbear.trashy.tools;
+package jerbear.trashy.editor.tools;
 
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.utils.Disposable;

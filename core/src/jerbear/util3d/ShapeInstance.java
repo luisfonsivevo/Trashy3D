@@ -194,6 +194,7 @@ public class ShapeInstance implements Disposable
 			return 1f / mass;
 	}
 	
+	//TODO may cause problems if used in a CollisionListener
 	public ShapeInstance setMass(float mass)
 	{
 		if(world != null)
@@ -297,6 +298,12 @@ public class ShapeInstance implements Disposable
 			if(isModel)
 				motionState.dispose();
 		}
+		
+		modelInst = null;
+		body = null;
+		
+		motionState = null;
+		collisionListener = null;
 	}
 	
 	public static interface CollisionListener

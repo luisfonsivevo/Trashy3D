@@ -1,4 +1,4 @@
-package jerbear.trashy;
+package jerbear.trashy.editor;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -13,32 +13,31 @@ import jerbear.util3d.Player;
 import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.ShapeInstance.CollisionListener;
 
-public class FPSPlayer extends Player implements CollisionListener
+public class EditorPlayer extends Player implements CollisionListener
 {
 	private static Vector3 tmp1 = new Vector3();
 	private static Vector3 tmp2 = new Vector3();
 	private static Matrix4 tmpM = new Matrix4();
 	
-	private static int jumpTimerMax = 30;
+	private static int jumpTimerMax = 20;
 	
+	public float speed;
 	public boolean pause;
 	
 	private boolean firstFrame = true;
+	private float pitch = 0;
+	private float yaw = 0;
 	
-	private float speed;
 	private boolean canJump = false;
 	private boolean fly = false;
 	private int jumpTimer = 0;
 	
-	private float pitch = 0;
-	private float yaw = 0;
-	
-	public FPSPlayer(float width, float height, float depth, float speed, int collisionFlags, float mass)
+	public EditorPlayer(float width, float height, float depth, float speed, int collisionFlags, float mass)
 	{
 		this(width, height, depth, 0, 0, 0, speed, collisionFlags, mass);
 	}
 	
-	public FPSPlayer(float width, float height, float depth, float x, float y, float z, float speed, int collisionFlags, float mass)
+	public EditorPlayer(float width, float height, float depth, float x, float y, float z, float speed, int collisionFlags, float mass)
 	{
 		super(width, height, depth, x, y, z, collisionFlags, mass);
 		this.speed = speed;
@@ -49,7 +48,7 @@ public class FPSPlayer extends Player implements CollisionListener
 	public void draw(ModelBatch batch, Environment env)
 	{
 		Vector3 dir = getCamera().direction;
-		tmp2.set(0, getBody().getLinearVelocity().y, 0);
+		tmp2.set(Vector3.Zero);
 		
 		boolean ctrlKey = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);
 		
@@ -103,35 +102,29 @@ public class FPSPlayer extends Player implements CollisionListener
 					tmp2.add(tmp1);
 				}
 				
-				boolean space = Gdx.input.isKeyJustPressed(Keys.SPACE);
-				if(space && jumpTimer <= 0 && !fly)
+				if(Gdx.input.isKeyJustPressed(Keys.SPACE))
 				{
-					if(canJump)
-						getBody().applyCentralForce(tmp1.set(0, 220 * speed, 0));
-					
-					jumpTimer = jumpTimerMax;
-				}
-				else if(space && !canJump && jumpTimer > 0 && !fly)
-				{
-					fly = true;
-					getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags | CollisionFlags.CF_KINEMATIC_OBJECT);
-				}
-				else if(space && fly && jumpTimer <= 0)
-				{
-					jumpTimer = jumpTimerMax;
-				}
-				else if(space && fly && jumpTimer > 0)
-				{
-					fly = false;
-					jumpTimer = jumpTimerMax;
-					getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags);
+					if(jumpTimer > 0)
+					{
+						getBody().setCollisionFlags(ShapeInstance.defaultCollisionFlags | (fly ? 0 : CollisionFlags.CF_KINEMATIC_OBJECT));
+						jumpTimer = 0;
+						fly = !fly;
+					}
+					else
+					{
+						jumpTimer = jumpTimerMax;
+						if(canJump && !fly)
+							getBody().applyCentralForce(tmp1.set(0, 220 * speed, 0));
+					}
 				}
 			}
 		}
+
+		getBody().setAngularVelocity(Vector3.Zero);
 		
 		if(fly)
 		{
-			if(!pause && !ctrlKey)
+			if(!ctrlKey)
 			{
 				if(Gdx.input.isKeyPressed(Keys.SPACE))
 					tmp2.y += speed;
@@ -140,18 +133,15 @@ public class FPSPlayer extends Player implements CollisionListener
 					tmp2.y -= speed;
 			}
 			
-			getPosition(tmp1);
-			tmp2.scl(Gdx.graphics.getDeltaTime() * 2).add(tmp1);
+			tmp2.scl(Gdx.graphics.getDeltaTime() * 2);
+			setTransform(tmpM.setToTranslation(getPosition(tmp1).add(tmp2)));
 		}
 		else
 		{
+			tmp2.y += getBody().getLinearVelocity().y;
 			getBody().setLinearVelocity(tmp2);
-			//getBody().applyCentralImpulse(tmp2);
-			getPosition(tmp2);
+			setTransform(tmpM.setToTranslation(getPosition(tmp1))); //delete any rotation
 		}
-		
-		setTransform(tmpM.setToTranslation(tmp2)); //delete any rotation
-		getBody().setAngularVelocity(Vector3.Zero);
 		
 		canJump = false;
 		if(--jumpTimer < 0)

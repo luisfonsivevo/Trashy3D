@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.Collision;
 
 import jerbear.util3d.shapes.Box;
@@ -41,8 +42,8 @@ public class Player extends ShapeInstance
 	@Override
 	public void draw(ModelBatch batch, Environment env)
 	{
+		camera.position.set(getPosition(new Vector3())); //set cam pos to bullet pos
 		camera.update();
-		setPosition(camera.position); //set bullet pos to cam pos
 	}
 	
 	@Override

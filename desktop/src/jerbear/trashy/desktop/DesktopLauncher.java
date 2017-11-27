@@ -3,7 +3,7 @@ package jerbear.trashy.desktop;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 
-import jerbear.trashy.Game;
+import jerbear.trashy.editor.Editor;
 
 public class DesktopLauncher
 {
@@ -16,6 +16,6 @@ public class DesktopLauncher
 		config.height = 600;
 		config.resizable = false;
 		
-		new LwjglApplication(new Game(), config);
+		new LwjglApplication(new Editor(), config);
 	}
 }

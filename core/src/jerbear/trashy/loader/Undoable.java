@@ -37,6 +37,7 @@ public interface Undoable
 		private static Matrix4 tmpM = new Matrix4();
 		
 		private ShapeInstance inst;
+		private byte[] backup;
 		
 		public AddShape(ShapeInstance inst)
 		{
@@ -120,6 +121,7 @@ public interface Undoable
 		
 		public void undo(World world)
 		{
+			backup = serialize();
 			inst.setDispose();
 		}
 		
@@ -127,11 +129,11 @@ public interface Undoable
 		{
 			try
 			{
-				return new AddShape(world, serialize());
+				return new AddShape(world, backup);
 			}
 			catch(IOException oops)
 			{
-				//THIS SHOULD NEVER HAPPEN (serialize() is always a valid byte array)
+				//THIS SHOULD NEVER HAPPEN (backup is always a valid byte array)
 				return null;
 			}
 		}
@@ -221,7 +223,11 @@ public interface Undoable
 				throw new IllegalArgumentException("Can't serialize shape: " + shape.getClass().getName());
 			}
 			
-			return buf.array();
+			byte[] returnVal = new byte[buf.position()];
+			buf.rewind();
+			buf.get(returnVal);
+			
+			return returnVal;
 		}
 	}
 	
@@ -234,6 +240,8 @@ public interface Undoable
 		private ShapeInstance inst;
 		private int part;
 		private Material mat, matPrv;
+		
+		private byte[] backup;
 		
 		public PaintShape(ShapeInstance inst, int part, Material mat, Material matPrv)
 		{
@@ -267,6 +275,7 @@ public interface Undoable
 		@Override
 		public void undo(World world)
 		{
+			backup = serialize();
 			inst.setMaterial(part, matPrv);
 		}
 		
@@ -275,11 +284,11 @@ public interface Undoable
 		{
 			try
 			{
-				return new PaintShape(world, serialize());
+				return new PaintShape(world, backup);
 			}
 			catch(IOException oops)
 			{
-				//THIS SHOULD NEVER HAPPEN (serialize() is always a valid byte array)
+				//THIS SHOULD NEVER HAPPEN (backup is always a valid byte array)
 				return null;
 			}
 		}

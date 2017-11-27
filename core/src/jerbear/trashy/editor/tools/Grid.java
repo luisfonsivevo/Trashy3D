@@ -1,4 +1,4 @@
-package jerbear.trashy.tools;
+package jerbear.trashy.editor.tools;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Buttons;
@@ -13,7 +13,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 
-import jerbear.trashy.EditorMenu;
+import jerbear.trashy.editor.Editor;
 import jerbear.trashy.loader.Undoable.AddShape;
 import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
@@ -38,7 +38,7 @@ public class Grid extends Tool
 	public Color color = Color.RED;
 	public boolean flipAxis;
 	
-	private EditorMenu menu;
+	private Editor menu;
 	private World world;
 	
 	private ShapeRenderer rend;
@@ -57,7 +57,7 @@ public class Grid extends Tool
 		BOX, RAMP, WALL, TRIANGLE, SPHERE, CYLINDER, CONE, CAPSULE
 	}
 	
-	public Grid(EditorMenu menu, World world, int size, float zoom)
+	public Grid(Editor menu, World world, int size, float zoom)
 	{
 		this.menu = menu;
 		this.world = world;
@@ -354,6 +354,25 @@ public class Grid extends Tool
 			}
 			rend.end();
 		}
+		
+		Matrix4 rendMat = rend.getProjectionMatrix();
+		rendMat.val[Matrix4.M30] = 0;
+		rendMat.val[Matrix4.M31] = 0;
+		rendMat.val[Matrix4.M32] = 0;
+		rendMat.val[Matrix4.M33] = 1;
+		rendMat.val[Matrix4.M23] = 0;
+		rendMat.val[Matrix4.M13] = 0;
+		rendMat.val[Matrix4.M03] = 0;
+		rend.updateMatrices();
+		
+		rend.begin(ShapeType.Line);
+		rend.setColor(Color.RED);
+		rend.line(Vector3.Zero, tmp1.set(Vector3.X).scl(0.05f));
+		rend.setColor(Color.GREEN);
+		rend.line(Vector3.Zero, tmp1.set(Vector3.Y).scl(0.05f));
+		rend.setColor(Color.BLUE);
+		rend.line(Vector3.Zero, tmp1.set(Vector3.Z).scl(0.05f));
+		rend.end();
 	}
 	
 	@Override
