@@ -9,6 +9,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.physics.bullet.Bullet;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -19,6 +21,8 @@ import com.kotcrab.vis.ui.widget.Menu;
 import com.kotcrab.vis.ui.widget.MenuBar;
 import com.kotcrab.vis.ui.widget.MenuItem;
 import com.kotcrab.vis.ui.widget.PopupMenu;
+import com.kotcrab.vis.ui.widget.color.ColorPicker;
+import com.kotcrab.vis.ui.widget.color.ColorPickerAdapter;
 import com.kotcrab.vis.ui.widget.file.FileChooser;
 import com.kotcrab.vis.ui.widget.file.FileChooser.Mode;
 import com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode;
@@ -39,17 +43,19 @@ import jerbear.util3d.shapes.Box;
 
 public class Editor extends ApplicationAdapter
 {
-	private MenuBar menuBar;
-	private LinkedList<Undoable> redos = new LinkedList<Undoable>();
-	
 	//keep references for enabling/disabling
+	private MenuBar menuBar;
 	private MenuItem menuFileSave;
 	private MenuItem menuEditUndo;
 	private MenuItem menuEditRedo;
-	private int asterisk = 0;
 	
 	private T3DFile file;
-	private Tool tool;
+	private LinkedList<Undoable> redos = new LinkedList<Undoable>();
+	private int asterisk = 0;
+	
+	private Tool curTool;
+	private Grid grid;
+	private PaintCan paintCan;
 	
 	private boolean dialogOpen;
 	private boolean ignoreEscape;
@@ -111,11 +117,20 @@ public class Editor extends ApplicationAdapter
 		menuToolsGridSub.addItem(menuToolsGridCapsule);
 		menuToolsGrid.setSubMenu(menuToolsGridSub);
 		menuTools.addItem(menuToolsGrid);
+		PopupMenu menuToolsPaintSub = new PopupMenu();
+		MenuItem menuToolsPaintColor = new MenuItem("Color");
+		MenuItem menuToolsPaintTexture = new MenuItem("Texture");
+		menuToolsPaintSub.addItem(menuToolsPaintColor);
+		menuToolsPaintSub.addItem(menuToolsPaintTexture);
+		menuToolsPaint.setSubMenu(menuToolsPaintSub);
 		menuTools.addItem(menuToolsPaint);
 		menuBar.addMenu(menuTools);
 		
-		tool = new Grid(this, file.world, 5, 1);
-		Gdx.input.setInputProcessor(tool);
+		grid = new Grid(this, file.world, 5, 1);
+		paintCan = new PaintCan(this, file.world, Color.RED);
+		
+		curTool = grid;
+		Gdx.input.setInputProcessor(curTool);
 		
 		menuFileNew.addListener(new ChangeListener()
 		{
@@ -190,18 +205,24 @@ public class Editor extends ApplicationAdapter
 		//Kinematic: CollisionFlags.CF_KINEMATIC_OBJECT
 		//Static: CollisionFlags.CF_STATIC_OBJECT;
 		
-		
+		menuToolsGrid.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
+			}
+		});
 		
 		menuToolsGridBox.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof Grid))
-					tool = new Grid(Editor.this, file.world, 5, 1); //defaults to box
-				else
-					((Grid) tool).setShape(GridShape.BOX);
-					
+				grid.setShape(GridShape.BOX);
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
 			}
 		});
 		
@@ -210,10 +231,9 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof Grid))
-					tool = new Grid(Editor.this, file.world, 5, 1);
-				
-				((Grid) tool).setShape(GridShape.RAMP);
+				grid.setShape(GridShape.RAMP);
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
 			}
 		});
 		
@@ -222,10 +242,9 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof Grid))
-					tool = new Grid(Editor.this, file.world, 5, 1);
-				
-				((Grid) tool).setShape(GridShape.WALL);
+				grid.setShape(GridShape.WALL);
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
 			}
 		});
 		
@@ -234,10 +253,9 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof Grid))
-					tool = new Grid(Editor.this, file.world, 5, 1);
-				
-				((Grid) tool).setShape(GridShape.TRIANGLE);
+				grid.setShape(GridShape.TRIANGLE);
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
 			}
 		});
 		
@@ -246,10 +264,9 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof Grid))
-					tool = new Grid(Editor.this, file.world, 5, 1);
-				
-				((Grid) tool).setShape(GridShape.SPHERE);
+				grid.setShape(GridShape.SPHERE);
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
 			}
 		});
 		
@@ -258,10 +275,9 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof Grid))
-					tool = new Grid(Editor.this, file.world, 5, 1);
-				
-				((Grid) tool).setShape(GridShape.CYLINDER);
+				grid.setShape(GridShape.CYLINDER);
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
 			}
 		});
 		
@@ -270,10 +286,9 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof Grid))
-					tool = new Grid(Editor.this, file.world, 5, 1);
-				
-				((Grid) tool).setShape(GridShape.CONE);
+				grid.setShape(GridShape.CONE);
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
 			}
 		});
 		
@@ -282,10 +297,9 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof Grid))
-					tool = new Grid(Editor.this, file.world, 5, 1);
-				
-				((Grid) tool).setShape(GridShape.CAPSULE);
+				grid.setShape(GridShape.CAPSULE);
+				curTool = grid;
+				Gdx.input.setInputProcessor(curTool);
 			}
 		});
 		
@@ -294,8 +308,35 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				if(!(tool instanceof PaintCan))
-					tool = new PaintCan(Editor.this, file.world, Color.PINK);
+				curTool = paintCan;
+				Gdx.input.setInputProcessor(curTool);
+			}
+		});
+		
+		menuToolsPaintColor.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				popup(new ColorPicker(new ColorPickerAdapter()
+				{
+					@Override
+					public void finished(Color color)
+					{
+						dialogOpen = false;
+						
+						paintCan.mat = new Material(ColorAttribute.createDiffuse(color));
+						curTool = paintCan;
+						Gdx.input.setInputProcessor(curTool);
+					}
+					
+					@Override
+					public void canceled(Color oldColor)
+					{
+						dialogOpen = false;
+						ignoreEscape = true;
+					}
+				}));
 			}
 		});
 		
@@ -314,7 +355,7 @@ public class Editor extends ApplicationAdapter
 		
 		if((Gdx.input.isKeyJustPressed(Keys.ALT_LEFT)))
 		{
-			if(Gdx.input.getInputProcessor() == tool)
+			if(Gdx.input.getInputProcessor() == curTool)
 			{
 				Dialog.setFocus();
 				Gdx.input.setCursorCatched(false);
@@ -322,7 +363,7 @@ public class Editor extends ApplicationAdapter
 			}
 			else
 			{
-				Gdx.input.setInputProcessor(tool);
+				Gdx.input.setInputProcessor(curTool);
 				Gdx.input.setCursorCatched(true);
 				player().pause = false;
 			}
@@ -350,7 +391,7 @@ public class Editor extends ApplicationAdapter
 			redo();
 		
 		ignoreEscape = false;
-		tool.draw();
+		curTool.draw();
 		
 		Dialog.draw();
 	}

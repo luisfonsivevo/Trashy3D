@@ -124,7 +124,7 @@ public class EditorPlayer extends Player implements CollisionListener
 		
 		if(fly)
 		{
-			if(!ctrlKey)
+			if(!pause && !ctrlKey)
 			{
 				if(Gdx.input.isKeyPressed(Keys.SPACE))
 					tmp2.y += speed;

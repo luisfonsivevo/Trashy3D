@@ -56,12 +56,18 @@ public class PaintCan extends Tool
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button)
 	{
-		//TODO check if you are painting the same material
 		ShapeInstance inst = world.rayCastClosest(5, null);
 		if(inst != null)
 		{
-			menu.undoAdd(new PaintShape(inst, 0, mat, inst.getMaterial(0)));
-			inst.setMaterial(0, mat);
+			Material matPrv = inst.getMaterial(0);
+			Color colPrv = ((ColorAttribute) matPrv.get(ColorAttribute.Diffuse)).color;
+			Color col = ((ColorAttribute) mat.get(ColorAttribute.Diffuse)).color;
+			
+			if(!col.equals(colPrv))
+			{
+				menu.undoAdd(new PaintShape(inst, 0, mat, matPrv));
+				inst.setMaterial(0, mat);
+			}
 		}
 		
 		return true;
