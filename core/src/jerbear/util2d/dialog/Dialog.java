@@ -96,6 +96,7 @@ public abstract class Dialog
 		skin.dispose();
 	}
 	
+	//TODO fix squiggle bug
 	public Dialog(String title)
 	{
 		window = new Window(title, skin);

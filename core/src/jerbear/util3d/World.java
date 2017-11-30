@@ -5,13 +5,17 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalShadowLight;
 import com.badlogic.gdx.graphics.g3d.utils.DepthShaderProvider;
+import com.badlogic.gdx.graphics.glutils.FileTextureData;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.AllHitsRayResultCallback;
 import com.badlogic.gdx.physics.bullet.collision.ClosestRayResultCallback;
@@ -260,6 +264,29 @@ public class World
 		shadowLight.dispose();
 		shadowBatch.dispose();
 		batch.dispose();
+	}
+	
+	public Texture getTexture(FileHandle file)
+	{
+		Texture tex;
+		for(Disposable disp : disposables)
+		{
+			if(disp instanceof Texture)
+			{
+				tex = (Texture) disp;
+				TextureData texData = tex.getTextureData();
+				if(texData instanceof FileTextureData)
+				{
+					FileHandle texFile = ((FileTextureData) texData).getFileHandle();
+					if(texFile.equals(file))
+						return tex;
+				}
+			}
+		}
+		
+		tex = new Texture(file);
+		disposables.add(tex);
+		return tex;
 	}
 	
 	private static class WorldContactListener extends ContactListener

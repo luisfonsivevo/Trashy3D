@@ -1,13 +1,17 @@
 package jerbear.trashy.editor.tools;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
+import com.badlogic.gdx.graphics.glutils.FileTextureData;
 
 import jerbear.trashy.editor.Editor;
 import jerbear.trashy.loader.Undoable.PaintShape;
@@ -18,21 +22,21 @@ public class PaintCan extends Tool
 {
 	public Material mat;
 	
-	private Editor menu;
+	private Editor editor;
 	private World world;
 	
 	private SpriteBatch batch;
 	private Texture crshair;
 	
-	public PaintCan(Editor menu, World world, Color colMat)
+	public PaintCan(Editor editor, World world, Color colMat)
 	{
-		this(menu, world, new Material(ColorAttribute.createDiffuse(colMat)));
+		this(editor, world, new Material(ColorAttribute.createDiffuse(colMat)));
 	}
 	
-	public PaintCan(Editor menu, World world, Material mat)
+	public PaintCan(Editor editor, World world, Material mat)
 	{
 		this.mat = mat;
-		this.menu = menu;
+		this.editor = editor;
 		this.world = world;
 		
 		batch = new SpriteBatch();
@@ -56,21 +60,65 @@ public class PaintCan extends Tool
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button)
 	{
+		int side = 0; //TODO side detection
+		
 		ShapeInstance inst = world.rayCastClosest(5, null);
 		if(inst != null)
 		{
-			Material matPrv = inst.getMaterial(0);
-			Color colPrv = ((ColorAttribute) matPrv.get(ColorAttribute.Diffuse)).color;
-			Color col = ((ColorAttribute) mat.get(ColorAttribute.Diffuse)).color;
+			Material matPrv = inst.getMaterial(side);
 			
-			if(!col.equals(colPrv))
+			boolean isColor = mat.has(ColorAttribute.Diffuse);
+			boolean isTexture = mat.has(TextureAttribute.Diffuse);
+			boolean isColorPrv = matPrv.has(ColorAttribute.Diffuse);
+			boolean isTexturePrv = matPrv.has(TextureAttribute.Diffuse);
+			
+			if(mat.getMask() != ColorAttribute.Diffuse && mat.getMask() != TextureAttribute.Diffuse)
 			{
-				menu.undoAdd(new PaintShape(inst, 0, mat, matPrv));
-				inst.setMaterial(0, mat);
+				throw new IllegalArgumentException("Material must have either ColorAttribute.Diffuse or TextureAttribute.Diffuse");
+			}
+			else if(isColor && isColorPrv) //TODO transparency
+			{
+				Color col = ((ColorAttribute) mat.get(ColorAttribute.Diffuse)).color;
+				Color colPrv = ((ColorAttribute) matPrv.get(ColorAttribute.Diffuse)).color;
+				
+				if(!col.equals(colPrv))
+					setMat(inst, side);
+				//else there is no need to change the material to a duplicate
+			}
+			else if(isTexture && isTexturePrv)
+			{
+				Texture tex = ((TextureAttribute) mat.get(TextureAttribute.Diffuse)).textureDescription.texture;
+				Texture texPrv = ((TextureAttribute) matPrv.get(TextureAttribute.Diffuse)).textureDescription.texture;
+				
+				TextureData texData = tex.getTextureData();
+				TextureData texDataPrv = texPrv.getTextureData();
+				
+				if(texData instanceof FileTextureData && texDataPrv instanceof FileTextureData)
+				{
+					FileHandle texFile = ((FileTextureData) texData).getFileHandle();
+					FileHandle texFilePrv = ((FileTextureData) texDataPrv).getFileHandle();
+					
+					if(!texFile.equals(texFilePrv))
+						setMat(inst, side);
+				}
+				else
+				{
+					setMat(inst, side); //this should not happen
+				}
+			}
+			else
+			{
+				setMat(inst, side);
 			}
 		}
 		
 		return true;
+	}
+	
+	private void setMat(ShapeInstance inst, int side)
+	{
+		editor.undoAdd(new PaintShape(inst, side, mat));
+		inst.setMaterial(side, mat);
 	}
 	
 	@Override

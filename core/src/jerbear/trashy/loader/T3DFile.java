@@ -1,10 +1,12 @@
 package jerbear.trashy.loader;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.LinkedList;
 
 import com.badlogic.gdx.utils.Disposable;
@@ -29,61 +31,65 @@ public class T3DFile implements Disposable
 		this.world = world;
 		this.file = file;
 		
-		if(file == null)
+		if(file == null || !file.isFile() || !file.exists())
 			return;
 		
-		byte[] data = Files.readAllBytes(file.toPath());
-		byte[] newdata;
-		int remaining = data.length;
+		DataInputStream stream = new DataInputStream(new FileInputStream(file));
+		
+		if(stream.readByte() != 'T')
+		{
+			stream.close();
+			throw new IOException("Not a T3D file");
+		}
+		
+		if(stream.readByte() != '3')
+		{
+			stream.close();
+			throw new IOException("Not a T3D file");
+		}
+		
+		if(stream.readByte() != 'D')
+		{
+			stream.close();
+			throw new IOException("Not a T3D file");
+		}
 		
 		try
 		{
-			if(remaining >= 3)
+			while(true)
 			{
-				if(data[0] == 'T' && data[1] == '3' && data[2] == 'D')
-				{
-					remaining -= 3;
-					
-					newdata = new byte[remaining];
-					System.arraycopy(data, 3, newdata, 0, remaining);
-					data = newdata;
-				}
-				else
-				{
-					throw new IOException("Not a T3D file");
-				}
-			}
-			else
-			{
-				throw new IOException("Not a T3D file");
-			}
-			
-			while(remaining > 0)
-			{
+				byte serialID;
 				Undoable undo;
-				switch(data[0])
+				
+				try
+				{
+					serialID = stream.readByte();
+				}
+				catch(EOFException oops)
+				{
+					//all done
+					stream.close();
+					break;
+				}
+				
+				switch(serialID)
 				{
 					case 0:
-						undo = new Undoable.AddShape(world, data);
+						undo = new Undoable.AddShape(world, stream);
 						break;
 					case 1:
-						undo = new Undoable.PaintShape(world, data);
+						undo = new Undoable.PaintShape(world, stream);
 						break;
 					default:
-						throw new IOException("Invalid serialization ID: " + data[0]);
+						throw new IOException("Invalid serialization ID: " + serialID);
 				}
 				
 				undos.add(undo);
-				byte[] serialization = undo.serialize();
-				remaining -= serialization.length;
-				
-				newdata = new byte[remaining];
-				System.arraycopy(data, serialization.length, newdata, 0, remaining);
-				data = newdata;
 			}
 		}
 		catch(IOException oops)
 		{
+			stream.close();
 			for(int i = undos.size() - 1; i >= 0; i--)
 				undos.get(i).undo(world);
 			

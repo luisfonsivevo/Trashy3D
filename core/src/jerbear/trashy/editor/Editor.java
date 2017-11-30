@@ -11,6 +11,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.physics.bullet.Bullet;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 import com.badlogic.gdx.scenes.scene2d.Actor;
@@ -40,6 +41,7 @@ import jerbear.util2d.dialog.YesNoDialog;
 import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
 import jerbear.util3d.shapes.Box;
+import jerbear.util3d.shapes.Shape;
 
 public class Editor extends ApplicationAdapter
 {
@@ -137,7 +139,7 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				newf(true, false);
+				newFile(true, false);
 			}
 		});
 		
@@ -146,7 +148,7 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				openDialog(false);
+				openFileDialog(false);
 			}
 		});
 		
@@ -155,7 +157,7 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				save(null);
+				saveFile(null);
 			}
 		});
 		
@@ -164,7 +166,7 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				saveAs(null);
+				saveFileDialog(null);
 			}
 		});
 		
@@ -204,6 +206,8 @@ public class Editor extends ApplicationAdapter
 		//Dynamic: 0
 		//Kinematic: CollisionFlags.CF_KINEMATIC_OBJECT
 		//Static: CollisionFlags.CF_STATIC_OBJECT;
+		
+		
 		
 		menuToolsGrid.addListener(new ChangeListener()
 		{
@@ -340,8 +344,47 @@ public class Editor extends ApplicationAdapter
 			}
 		});
 		
+		menuToolsPaintTexture.addListener(new ChangeListener()
+		{
+			@Override
+			public void changed(ChangeEvent event, Actor actor)
+			{
+				FileTypeFilter filter = new FileTypeFilter(true);
+				filter.addRule("PNG files (*.png)", "png");
+				filter.addRule("JPEG files (*.jpg)", "jpg");
+				
+				FileChooser chooser = new FileChooser(Mode.OPEN); //TODO image previews?
+				chooser.setSelectionMode(SelectionMode.FILES);
+				chooser.setMultiSelectionEnabled(false);
+				chooser.setFileTypeFilter(filter);
+				chooser.getTitleLabel().setText("Open texture");
+				
+				chooser.setListener(new FileChooserAdapter()
+				{
+					@Override
+					public void selected(Array<FileHandle> file)
+					{
+						dialogOpen = false;
+						
+						paintCan.mat = new Material(TextureAttribute.createDiffuse(Editor.this.file.world.getTexture(file.get(0))));
+						curTool = paintCan;
+						Gdx.input.setInputProcessor(curTool);
+					}
+					
+					@Override
+					public void canceled()
+					{
+						dialogOpen = false;
+						ignoreEscape = true;
+					}
+				});
+				
+				popup(chooser);
+			}
+		});
+		
 		Dialog.addWidget(menuBar.getTable());
-		newf(true, true);
+		newFile(true, true);
 	}
 	
 	@Override
@@ -370,19 +413,19 @@ public class Editor extends ApplicationAdapter
 		}
 		
 		if(ctrl && Gdx.input.isKeyJustPressed(Keys.N))
-			newf(true, false);
+			newFile(true, false);
 		
 		if(Gdx.input.isKeyJustPressed(Keys.ESCAPE) && !dialogOpen && !ignoreEscape)
 			exit();	
 		
 		if(ctrl && Gdx.input.isKeyJustPressed(Keys.O))
-			openDialog(false);
+			openFileDialog(false);
 		
 		if(ctrl && !shift && Gdx.input.isKeyJustPressed(Keys.S) && !menuFileSave.isDisabled())
-			save(null);
+			saveFile(null);
 		
 		if(ctrl && shift && Gdx.input.isKeyJustPressed(Keys.S))
-			saveAs(null);
+			saveFileDialog(null);
 		
 		if(ctrl && !shift && Gdx.input.isKeyJustPressed(Keys.Z) && !file.undos.isEmpty())
 			undo();
@@ -396,7 +439,7 @@ public class Editor extends ApplicationAdapter
 		Dialog.draw();
 	}
 	
-	public void newf(boolean firstBox, boolean force)
+	public void newFile(boolean firstBox, boolean force)
 	{
 		if(menuFileSave.isDisabled() || force)
 		{
@@ -432,16 +475,16 @@ public class Editor extends ApplicationAdapter
 					
 					if(answer == 0)
 					{
-						newf(firstBox, true);
+						newFile(firstBox, true);
 					}
 					else if(answer == 1)
 					{
-						save(new SaveEvent()
+						saveFile(new SaveEvent()
 						{
 							@Override
 							public void onSave()
 							{
-								newf(firstBox, true);
+								newFile(firstBox, true);
 							}
 						});
 					}
@@ -471,7 +514,7 @@ public class Editor extends ApplicationAdapter
 					}
 					else if(answer == 1)
 					{
-						save(new SaveEvent()
+						saveFile(new SaveEvent()
 						{
 							@Override
 							public void onSave()
@@ -485,7 +528,7 @@ public class Editor extends ApplicationAdapter
 		}
 	}
 	
-	public void openDialog(boolean force)
+	public void openFileDialog(boolean force)
 	{
 		if(menuFileSave.isDisabled() || force)
 		{
@@ -496,7 +539,7 @@ public class Editor extends ApplicationAdapter
 			chooser.setSelectionMode(SelectionMode.FILES);
 			chooser.setMultiSelectionEnabled(false);
 			chooser.setFileTypeFilter(filter);
-			chooser.getTitleLabel().setText("Open file");
+			chooser.getTitleLabel().setText("Open game");
 			
 			chooser.setListener(new FileChooserAdapter()
 			{
@@ -528,16 +571,16 @@ public class Editor extends ApplicationAdapter
 					
 					if(answer == 0)
 					{
-						openDialog(true);
+						openFileDialog(true);
 					}
 					else if(answer == 1)
 					{
-						save(new SaveEvent()
+						saveFile(new SaveEvent()
 						{
 							@Override
 							public void onSave()
 							{
-								openDialog(true);
+								openFileDialog(true);
 							}
 						});
 					}
@@ -548,7 +591,7 @@ public class Editor extends ApplicationAdapter
 	
 	public void openFile(File file)
 	{
-		newf(false, true);
+		newFile(false, true);
 		
 		try
 		{
@@ -572,11 +615,11 @@ public class Editor extends ApplicationAdapter
 				}
 			});
 			
-			newf(true, true);
+			newFile(true, true);
 		}
 	}
 	
-	public void saveAs(SaveEvent event)
+	public void saveFileDialog(SaveEvent event)
 	{
 		FileTypeFilter filter = new FileTypeFilter(true);
 		filter.addRule("Trashy3D files (*.t3d)", "t3d");
@@ -584,7 +627,7 @@ public class Editor extends ApplicationAdapter
 		FileChooser chooser = new FileChooser(Mode.SAVE);
 		chooser.setSelectionMode(SelectionMode.FILES);
 		chooser.setFileTypeFilter(filter);
-		chooser.getTitleLabel().setText("Save file");
+		chooser.getTitleLabel().setText("Save game");
 		
 		chooser.setListener(new FileChooserAdapter()
 		{
@@ -593,7 +636,7 @@ public class Editor extends ApplicationAdapter
 			{
 				dialogOpen = false;
 				Editor.this.file.file = file.get(0).file();
-				save(event);
+				saveFile(event);
 			}
 			
 			@Override
@@ -607,11 +650,11 @@ public class Editor extends ApplicationAdapter
 		popup(chooser);
 	}
 	
-	public void save(SaveEvent event)
+	public void saveFile(SaveEvent event)
 	{
 		if(file.file == null)
 		{
-			saveAs(event);
+			saveFileDialog(event);
 			return;
 		}
 		
@@ -693,15 +736,13 @@ public class Editor extends ApplicationAdapter
 		}
 	}
 	
-	@Override
-	public void dispose()
+	public boolean hasShape(Shape shape)
 	{
-		menuBar.getTable().remove();
-		file.dispose();
-		Dialog.dispose();
+		//TODO implement and move to world class
+		return false;
 	}
 	
-	private void popup(Dialog dialog)
+	public void popup(Dialog dialog)
 	{
 		if(dialogOpen)
 			return;
@@ -714,7 +755,7 @@ public class Editor extends ApplicationAdapter
 		dialogOpen = true;
 	}
 	
-	private void popup(WidgetGroup widgets)
+	public void popup(WidgetGroup widgets)
 	{
 		if(dialogOpen)
 			return;
@@ -725,6 +766,13 @@ public class Editor extends ApplicationAdapter
 		Gdx.input.setCursorCatched(false);
 		player().pause = true;
 		dialogOpen = true;
+	}
+	
+	@Override
+	public void dispose()
+	{
+		file.dispose();
+		Dialog.dispose();
 	}
 	
 	private EditorPlayer player()

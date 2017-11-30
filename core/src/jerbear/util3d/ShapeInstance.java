@@ -154,6 +154,7 @@ public class ShapeInstance implements Disposable
 			return null;
 	}
 	
+	//TODO scaling
 	public ShapeInstance setTransform(Matrix4 transform)
 	{
 		if(isModel)

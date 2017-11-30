@@ -1,12 +1,18 @@
 package jerbear.trashy.loader;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
+import com.badlogic.gdx.graphics.glutils.FileTextureData;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
@@ -44,66 +50,61 @@ public interface Undoable
 			this.inst = inst;
 		}
 		
-		public AddShape(World world, byte[] data) throws IOException
+		public AddShape(World world, DataInputStream stream) throws IOException
 		{
 			try
 			{
-				ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
-				if(buf.get() != id)
-					throw new IllegalStateException("Serialization does not match class ID");
-				
-				ShapeInstance.curID = buf.getInt();
+				ShapeInstance.curID = stream.readInt();
 				
 				Matrix4 transform = new Matrix4();
 				for(int i = 0; i < 16; i++)
 				{
-					transform.val[i] = buf.getFloat();
+					transform.val[i] = stream.readFloat();
 				}
 				
-				byte type = buf.get();
+				byte type = stream.readByte();
 				switch(type)
 				{
 					case 0:
-						float widthbox = buf.getFloat();
-						float heightbox = buf.getFloat();
-						float depthbox = buf.getFloat();
-						
+						float widthbox = stream.readFloat();
+						float heightbox = stream.readFloat();
+						float depthbox = stream.readFloat();
 						inst = world.addShape(new ShapeInstance(new Box(widthbox, heightbox, depthbox, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 1:
-						float radiuscap = buf.getFloat();
-						float heightcap = buf.getFloat();
+						float radiuscap = stream.readFloat();
+						float heightcap = stream.readFloat();
 						
 						inst = world.addShape(new ShapeInstance(new Capsule(radiuscap, heightcap, 10, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 2:
-						float radiuscone = buf.getFloat();
-						float heightcone = buf.getFloat();
+						float radiuscone = stream.readFloat();
+						float heightcone = stream.readFloat();
 						
 						inst = world.addShape(new ShapeInstance(new Cone(radiuscone, heightcone, 10, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 3:
-						float widthcyl = buf.getFloat();
-						float heightcyl = buf.getFloat();
-						float depthcyl = buf.getFloat();
+						float widthcyl = stream.readFloat();
+						float heightcyl = stream.readFloat();
+						float depthcyl = stream.readFloat();
 						
 						inst = world.addShape(new ShapeInstance(new Cylinder(widthcyl, heightcyl, depthcyl, 10, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 4:
-						float widthrect = buf.getFloat();
-						float depthrect = buf.getFloat();
+						float widthrect = stream.readFloat();
+						float depthrect = stream.readFloat();
 						
 						inst = world.addShape(new ShapeInstance(new Rectangle(widthrect, depthrect, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 5:
-						float radiussph = buf.getFloat();
+						float radiussph = stream.readFloat();
 						
 						inst = world.addShape(new ShapeInstance(new Sphere(radiussph, 10, 10, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
 					case 6:
-						Vector3 v1 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
-						Vector3 v2 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
-						Vector3 v3 = new Vector3(buf.getFloat(), buf.getFloat(), buf.getFloat());
+						Vector3 v1 = new Vector3(stream.readFloat(), stream.readFloat(), stream.readFloat());
+						Vector3 v2 = new Vector3(stream.readFloat(), stream.readFloat(), stream.readFloat());
+						Vector3 v3 = new Vector3(stream.readFloat(), stream.readFloat(), stream.readFloat());
 						
 						inst = world.addShape(new ShapeInstance(new Triangle(v1, v2, v3, Color.RED).disposeByWorld(world), 0, 0, 0, CollisionFlags.CF_STATIC_OBJECT, 0));
 						break;
@@ -129,7 +130,11 @@ public interface Undoable
 		{
 			try
 			{
-				return new AddShape(world, backup);
+				DataInputStream stream = new DataInputStream(new ByteArrayInputStream(backup));
+				stream.readByte(); //throw out ID
+				Undoable returnVal = new AddShape(world, stream);
+				stream.close();
+				return returnVal;
 			}
 			catch(IOException oops)
 			{
@@ -140,7 +145,7 @@ public interface Undoable
 		
 		public byte[] serialize()
 		{
-			ByteBuffer buf = ByteBuffer.allocate(maxSize).order(ByteOrder.LITTLE_ENDIAN);
+			ByteBuffer buf = ByteBuffer.allocate(maxSize).order(ByteOrder.BIG_ENDIAN); //DataInputStream only allows big endian
 			buf.put(id);
 			
 			buf.putInt(inst.getID());
@@ -235,36 +240,47 @@ public interface Undoable
 	public class PaintShape implements Undoable
 	{
 		public static final byte id = (byte) 1;
-		public static final int maxSize = 13;
+		public static final int minSize = 10;
 		
 		private ShapeInstance inst;
-		private int part;
+		private int side;
 		private Material mat, matPrv;
 		
 		private byte[] backup;
 		
-		public PaintShape(ShapeInstance inst, int part, Material mat, Material matPrv)
+		public PaintShape(ShapeInstance inst, int side, Material mat)
 		{
 			this.inst = inst;
-			this.part = part;
+			this.side = side;
 			this.mat = mat;
-			this.matPrv = matPrv;
+			this.matPrv = inst.getMaterial(side);
 		}
 		
-		public PaintShape(World world, byte[] data) throws IOException
+		public PaintShape(World world, DataInputStream data) throws IOException
 		{
 			try
 			{
-				ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
-				if(buf.get() != id)
-					throw new IllegalStateException("Serialization does not match class ID");
+				inst = world.getShape(data.readInt());
+				side = data.readInt();
 				
-				inst = world.getShape(buf.getInt());
-				part = buf.getInt();
-				mat = new Material(ColorAttribute.createDiffuse(new Color(buf.getInt())));
+				if(data.readBoolean())
+				{
+					char[] ca = new char[data.readInt()];
+					for(int i = 0; i < ca.length; i++)
+					{
+						ca[i] = data.readChar();
+					}
+					
+					Texture tex = world.getTexture(Gdx.files.absolute(new String(ca)));
+					mat = new Material(TextureAttribute.createDiffuse(tex));
+				}
+				else
+				{
+					mat = new Material(ColorAttribute.createDiffuse(new Color(data.readInt())));
+				}
 				
-				matPrv = inst.getMaterial(part);
-				inst.setMaterial(part, mat);
+				matPrv = inst.getMaterial(side);
+				inst.setMaterial(side, mat);
 			}
 			catch(Exception oops)
 			{
@@ -276,7 +292,7 @@ public interface Undoable
 		public void undo(World world)
 		{
 			backup = serialize();
-			inst.setMaterial(part, matPrv);
+			inst.setMaterial(side, matPrv);
 		}
 		
 		@Override
@@ -284,11 +300,14 @@ public interface Undoable
 		{
 			try
 			{
-				return new PaintShape(world, backup);
+				DataInputStream stream = new DataInputStream(new ByteArrayInputStream(backup));
+				stream.readByte();
+				Undoable returnVal = new PaintShape(world, stream);
+				stream.close();
+				return returnVal;
 			}
 			catch(IOException oops)
 			{
-				//THIS SHOULD NEVER HAPPEN (backup is always a valid byte array)
 				return null;
 			}
 		}
@@ -296,12 +315,40 @@ public interface Undoable
 		@Override
 		public byte[] serialize()
 		{
-			ByteBuffer buf = ByteBuffer.allocate(maxSize).order(ByteOrder.LITTLE_ENDIAN);
+			int bufSize = minSize;
+			boolean hasTex = mat.has(TextureAttribute.Diffuse);
+			
+			String tex = null;
+			int col = 0;
+			
+			if(hasTex) //add length of file string
+			{
+				tex = ((FileTextureData) ((TextureAttribute) mat.get(TextureAttribute.Diffuse)).textureDescription.texture.getTextureData()).getFileHandle().path();
+				bufSize += 4 + tex.length() * 2;
+			}
+			else
+			{
+				col = Color.rgba8888(((ColorAttribute) mat.get(ColorAttribute.Diffuse)).color);
+				bufSize += 4;
+			}
+			
+			ByteBuffer buf = ByteBuffer.allocate(bufSize).order(ByteOrder.BIG_ENDIAN);
 			buf.put(id);
 			
 			buf.putInt(inst.getID());
-			buf.putInt(part);
-			buf.putInt(Color.rgba8888(((ColorAttribute) mat.get(ColorAttribute.Diffuse)).color));
+			buf.putInt(side);
+			buf.put((byte) (hasTex ? 1 : 0));
+			
+			if(hasTex)
+			{
+				buf.putInt(tex.length());
+				for(char c : tex.toCharArray())
+					buf.putChar(c);
+			}
+			else
+			{
+				buf.putInt(col);
+			}
 			
 			return buf.array();
 		}
