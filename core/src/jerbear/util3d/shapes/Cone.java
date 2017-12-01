@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
@@ -26,12 +27,12 @@ public class Cone implements Shape
 	
 	public Cone(float radius, float height, int div, Color colMat)
 	{
-		this(radius, height, div, new Material(ColorAttribute.createDiffuse(colMat)));
+		this(radius, height, div, new Material(ColorAttribute.createDiffuse(colMat), new BlendingAttribute()));
 	}
 	
 	public Cone(float radius, float height, int div, Texture texMat, boolean manageTex)
 	{
-		this(radius, height, div, new Material(TextureAttribute.createDiffuse(texMat)));
+		this(radius, height, div, new Material(TextureAttribute.createDiffuse(texMat), new BlendingAttribute()));
 		if(manageTex)
 			model.manageDisposable(texMat);
 	}

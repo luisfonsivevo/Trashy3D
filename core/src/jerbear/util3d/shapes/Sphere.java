@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
@@ -35,12 +36,12 @@ public class Sphere implements Shape
 	
 	public Sphere(float radius, int divU, int divV, Color colMat)
 	{
-		this(radius, divU, divV, new Material(ColorAttribute.createDiffuse(colMat)));
+		this(radius, divU, divV, new Material(ColorAttribute.createDiffuse(colMat), new BlendingAttribute()));
 	}
 	
 	public Sphere(float radius, int divU, int divV, Texture texMat, boolean manageTex)
 	{
-		this(radius, divU, divV, new Material(TextureAttribute.createDiffuse(texMat)));
+		this(radius, divU, divV, new Material(TextureAttribute.createDiffuse(texMat), new BlendingAttribute()));
 		if(manageTex)
 			model.manageDisposable(texMat);
 	}

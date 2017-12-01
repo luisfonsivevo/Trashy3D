@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.math.Vector3;
@@ -34,12 +35,12 @@ public class Box implements Shape
 	
 	public Box(float width, float height, float depth, Color colMat)
 	{
-		this(width, height, depth, new Material(ColorAttribute.createDiffuse(colMat)));
+		this(width, height, depth, new Material(ColorAttribute.createDiffuse(colMat), new BlendingAttribute()));
 	}
 	
 	public Box(float width, float height, float depth, Texture texMat, boolean manageTex)
 	{
-		this(width, height, depth, new Material(TextureAttribute.createDiffuse(texMat)));
+		this(width, height, depth, new Material(TextureAttribute.createDiffuse(texMat), new BlendingAttribute()));
 		if(manageTex)
 			model.manageDisposable(texMat);
 	}

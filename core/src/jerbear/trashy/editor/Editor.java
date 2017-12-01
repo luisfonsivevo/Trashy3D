@@ -10,6 +10,7 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.physics.bullet.Bullet;
@@ -329,7 +330,7 @@ public class Editor extends ApplicationAdapter
 					{
 						dialogOpen = false;
 						
-						paintCan.mat = new Material(ColorAttribute.createDiffuse(color));
+						paintCan.mat = new Material(ColorAttribute.createDiffuse(color), new BlendingAttribute());
 						curTool = paintCan;
 						Gdx.input.setInputProcessor(curTool);
 					}
@@ -349,9 +350,19 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
+				//supported: https://github.com/libgdx/libgdx/blob/master/gdx/jni/gdx2d/stb_image.h
 				FileTypeFilter filter = new FileTypeFilter(true);
-				filter.addRule("PNG files (*.png)", "png");
-				filter.addRule("JPEG files (*.jpg)", "jpg");
+				filter.addRule("Image files", "jpg", "jpeg", "png", "tga", "bmp", "psd", "gif", "hdr", "pic", "pnm", "cim");
+				filter.addRule("JPEG images (*.jpg;*.jpeg)", "jpg", "jpeg");
+				filter.addRule("PNG images (*.png)", "png");
+				filter.addRule("TGA images (*.tga)", "tga");
+				filter.addRule("BMP images (*.bmp)", "bmp");
+				filter.addRule("GIF images (*.gif)", "gif");
+				filter.addRule("HDR images (*.hdr)", "hdr");
+				filter.addRule("PIC images (*.pic)", "pic");
+				filter.addRule("PNM images (*.pnm)", "pnm");
+				filter.addRule("Photoshop documents (*.psd)", "psd");
+				filter.addRule("libGDX pixmaps (*.cim)", "cim");
 				
 				FileChooser chooser = new FileChooser(Mode.OPEN); //TODO image previews?
 				chooser.setSelectionMode(SelectionMode.FILES);
@@ -366,7 +377,7 @@ public class Editor extends ApplicationAdapter
 					{
 						dialogOpen = false;
 						
-						paintCan.mat = new Material(TextureAttribute.createDiffuse(Editor.this.file.world.getTexture(file.get(0))));
+						paintCan.mat = new Material(TextureAttribute.createDiffuse(Editor.this.file.world.getTexture(file.get(0))), new BlendingAttribute());
 						curTool = paintCan;
 						Gdx.input.setInputProcessor(curTool);
 					}
@@ -742,7 +753,14 @@ public class Editor extends ApplicationAdapter
 		return false;
 	}
 	
-	public void popup(Dialog dialog)
+	@Override
+	public void dispose()
+	{
+		file.dispose();
+		Dialog.dispose();
+	}
+	
+	private void popup(Dialog dialog)
 	{
 		if(dialogOpen)
 			return;
@@ -755,7 +773,7 @@ public class Editor extends ApplicationAdapter
 		dialogOpen = true;
 	}
 	
-	public void popup(WidgetGroup widgets)
+	private void popup(WidgetGroup widgets)
 	{
 		if(dialogOpen)
 			return;
@@ -766,13 +784,6 @@ public class Editor extends ApplicationAdapter
 		Gdx.input.setCursorCatched(false);
 		player().pause = true;
 		dialogOpen = true;
-	}
-	
-	@Override
-	public void dispose()
-	{
-		file.dispose();
-		Dialog.dispose();
 	}
 	
 	private EditorPlayer player()

@@ -118,7 +118,7 @@ public class World
 		{
 			((ShapeInstance) iter.next()).drawShadow(shadowBatch);
 		}
-		shadowBatch.end();
+		shadowBatch.end(); //TODO weird crash: too many shadows? array index out of bounds
 		shadowLight.end();
 		
 		//rendering, events, and disposal
@@ -138,7 +138,7 @@ public class World
 				iter.remove();
 			}
 		}
-		batch.end();
+		batch.end(); //TODO weird crash: blending material comparisons null pointer
 	}
 	
 	public ShapeInstance addShape(ShapeInstance shape)

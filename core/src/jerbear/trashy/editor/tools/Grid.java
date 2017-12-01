@@ -560,6 +560,7 @@ public class Grid extends Tool
 				}
 				break;
 			case Buttons.RIGHT:
+				//TODO only undo one point
 				resetPoints();
 				break;
 		}

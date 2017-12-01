@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.math.Vector3;
@@ -14,6 +15,7 @@ import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 
 import jerbear.util3d.World;
 
+//TODO make this a "Ramp" not "Shape"
 //essentially a box with 0 height; not drawing middle 4 faces
 public class Rectangle implements Shape
 {
@@ -31,12 +33,12 @@ public class Rectangle implements Shape
 	
 	public Rectangle(float width, float depth, Color colMat)
 	{
-		this(width, depth, new Material(ColorAttribute.createDiffuse(colMat)));
+		this(width, depth, new Material(ColorAttribute.createDiffuse(colMat), new BlendingAttribute()));
 	}
 	
 	public Rectangle(float width, float depth, Texture texMat, boolean manageTex)
 	{
-		this(width, depth, new Material(TextureAttribute.createDiffuse(texMat)));
+		this(width, depth, new Material(TextureAttribute.createDiffuse(texMat), new BlendingAttribute()));
 		if(manageTex)
 			model.manageDisposable(texMat);
 	}

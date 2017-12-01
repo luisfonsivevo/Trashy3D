@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder.VertexInfo;
@@ -15,6 +16,7 @@ import com.badlogic.gdx.physics.bullet.collision.btTriangleShape;
 
 import jerbear.util3d.World;
 
+//TODO make this "Polygon" not "Triangle"
 public class Triangle implements Shape
 {
 	public static final int SIDE_FRONT = 0;
@@ -31,12 +33,12 @@ public class Triangle implements Shape
 	
 	public Triangle(Vector3 v1, Vector3 v2, Vector3 v3, Color colMat)
 	{
-		this(v1, v2, v3, new Material(ColorAttribute.createDiffuse(colMat)));
+		this(v1, v2, v3, new Material(ColorAttribute.createDiffuse(colMat), new BlendingAttribute()));
 	}
 	
 	public Triangle(Vector3 v1, Vector3 v2, Vector3 v3, Texture texMat, boolean manageTex)
 	{
-		this(v1, v2, v3, new Material(TextureAttribute.createDiffuse(texMat)));
+		this(v1, v2, v3, new Material(TextureAttribute.createDiffuse(texMat), new BlendingAttribute()));
 		if(manageTex)
 			model.manageDisposable(texMat);
 	}

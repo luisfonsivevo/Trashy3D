@@ -10,6 +10,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.glutils.FileTextureData;
@@ -272,11 +273,11 @@ public interface Undoable
 					}
 					
 					Texture tex = world.getTexture(Gdx.files.absolute(new String(ca)));
-					mat = new Material(TextureAttribute.createDiffuse(tex));
+					mat = new Material(TextureAttribute.createDiffuse(tex), new BlendingAttribute());
 				}
 				else
 				{
-					mat = new Material(ColorAttribute.createDiffuse(new Color(data.readInt())));
+					mat = new Material(ColorAttribute.createDiffuse(new Color(data.readInt())), new BlendingAttribute());
 				}
 				
 				matPrv = inst.getMaterial(side);
