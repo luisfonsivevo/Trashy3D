@@ -176,13 +176,12 @@ public class ShapeInstance implements Disposable
 	
 	public ShapeInstance setPosition(Vector3 pos)
 	{
-		setTransform(getTransform(new Matrix4()).setToTranslation(pos));
-		return this;
+		return setPosition(pos.x, pos.y, pos.z);
 	}
 	
 	public ShapeInstance setPosition(float x, float y, float z)
 	{
-		setTransform(getTransform(new Matrix4()).setToTranslation(x, y, z));
+		setTransform(getTransform(new Matrix4()).setTranslation(x, y, z));
 		return this;
 	}
 	

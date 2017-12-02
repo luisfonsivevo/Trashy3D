@@ -21,8 +21,7 @@ import jerbear.trashy.editor.Editor;
 import jerbear.trashy.loader.Undoable.PaintShape;
 import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
-import jerbear.util3d.shapes.Box;
-import jerbear.util3d.shapes.Shape;
+import jerbear.util3d.shapes.*;
 
 public class PaintCan extends Tool
 {
@@ -84,37 +83,31 @@ public class PaintCan extends Tool
 				dim.set(0, 0, box.getDimensions(dim).z / 2f).mul(transform);
 				Vector3 nor = new Vector3(0, 0, 1).mul(transform).sub(pos);
 				Plane f = new Plane(nor, dim);
-				System.out.println(f.distance(hit));
 				
 				//back
 				dim.set(0, 0, -box.getDimensions(dim).z / 2f).mul(transform);
 				nor.set(0, 0, -1).mul(transform).sub(pos);
 				Plane b = new Plane(nor, dim);
-				System.out.println(b.distance(hit));
 				
 				//left
 				dim.set(-box.getDimensions(dim).x / 2f, 0, 0).mul(transform);
 				nor.set(-1, 0, 0).mul(transform).sub(pos);
 				Plane l = new Plane(nor, dim);
-				System.out.println(l.distance(hit));
 				
 				//right
 				dim.set(box.getDimensions(dim).x / 2f, 0, 0).mul(transform);
 				nor.set(1, 0, 0).mul(transform).sub(pos);
 				Plane r = new Plane(nor, dim);
-				System.out.println(r.distance(hit));
 				
 				//bottom
 				dim.set(0, -box.getDimensions(dim).y / 2f, 0).mul(transform);
 				nor.set(0, -1, 0).mul(transform).sub(pos);
 				Plane d = new Plane(nor, dim);
-				System.out.println(d.distance(hit));
 				
 				//top
 				dim.set(0, box.getDimensions(dim).y / 2f, 0).mul(transform);
 				nor.set(0, 1, 0).mul(transform).sub(pos);
 				Plane u = new Plane(nor, dim);
-				System.out.println(u.distance(hit));
 				
 				Plane min;
 				min = Math.abs(b.distance(hit)) < Math.abs(f.distance(hit)) ? b : f;
@@ -135,6 +128,10 @@ public class PaintCan extends Tool
 					side = 4;
 				else //if(min == u)
 					side = 5;
+			}
+			else if(shape instanceof Capsule)
+			{
+				side = 0;
 			}
 			else
 			{

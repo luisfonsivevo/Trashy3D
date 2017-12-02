@@ -15,7 +15,7 @@ import com.badlogic.gdx.physics.bullet.collision.btCollisionShape;
 
 import jerbear.util3d.World;
 
-//TODO make this a "Ramp" not "Shape"
+//TODO make this a "Ramp" not "Rectangle"
 //essentially a box with 0 height; not drawing middle 4 faces
 public class Rectangle implements Shape
 {

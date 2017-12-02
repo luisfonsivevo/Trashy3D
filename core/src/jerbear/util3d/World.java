@@ -36,7 +36,7 @@ import com.badlogic.gdx.utils.Disposable;
 
 import jerbear.util3d.ShapeInstance.CollisionListener;
 
-@SuppressWarnings("deprecation") //for shadows
+@SuppressWarnings("deprecation") //TODO may cause problems in the future
 public class World
 {
 	private static Vector3 tmp = new Vector3();
@@ -46,13 +46,12 @@ public class World
 	public final Player player;
 	public final Environment env;
 	public final btDynamicsWorld dynamicsWorld;
-	
-	private DirectionalShadowLight shadowLight;
-	
 	public final ArrayList<Disposable> disposables;
+	
 	private ArrayList<ShapeInstance> shapes;
 	private ArrayList<ShapeInstance> shapesAdd;
 	
+	private DirectionalShadowLight shadowLight;
 	private btCollisionConfiguration collisionConfig;
 	private btDispatcher dispatcher;
 	private btBroadphaseInterface broadphase;

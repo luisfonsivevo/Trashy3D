@@ -45,7 +45,7 @@ public class EditorPlayer extends Player implements CollisionListener
 	}
 	
 	@Override
-	public void draw(ModelBatch batch, Environment env)
+	public void draw(ModelBatch batch, Environment env) //TODO terminal velocity
 	{
 		Vector3 dir = getCamera().direction;
 		tmp2.set(Vector3.Zero);

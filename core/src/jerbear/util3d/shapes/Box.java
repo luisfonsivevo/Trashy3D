@@ -58,42 +58,42 @@ public class Box implements Shape
 		//BL BR TR TL
 		
 		//front 
-		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
+		modelBuilder.part("f", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
 				-width / 2f, -height / 2f, depth / 2f,
 				width / 2f, -height / 2f, depth / 2f,
 				width / 2f, height / 2f, depth / 2f,
 				-width / 2f, height / 2f, depth / 2f, 0, 0, 1);
 		
 		//back
-		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
+		modelBuilder.part("b", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
 				width / 2f, -height / 2f, -depth / 2f,
 				-width / 2f, -height / 2f, -depth / 2f,
 				-width / 2f, height / 2f, -depth / 2f,
 				width / 2f, height / 2f, -depth / 2f, 0, 0, -1);
 		
 		//left
-		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
+		modelBuilder.part("l", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
 				-width / 2f, -height / 2f, -depth / 2f,
 				-width / 2f, -height / 2f, depth / 2f,
 				-width / 2f, height / 2f, depth / 2f,
 				-width / 2f, height / 2f, -depth / 2f, -1, 0, 0);
 		
 		//right
-		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
+		modelBuilder.part("r", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
 				width / 2f, -height / 2f, depth / 2f,
 				width / 2f, -height / 2f, -depth / 2f,
 				width / 2f, height / 2f, -depth / 2f,
 				width / 2f, height / 2f, depth / 2f, 1, 0, 0);
 		
 		//bottom
-		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
+		modelBuilder.part("d", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
 				-width / 2f, -height / 2f, -depth / 2f,
 				width / 2f, -height / 2f, -depth / 2f,
 				width / 2f, -height / 2f, depth / 2f,
 				-width / 2f, -height / 2f, depth / 2f, 0, -1, 0);
 		
 		//top
-		modelBuilder.part("rect", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
+		modelBuilder.part("u", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal | Usage.TextureCoordinates, mat).rect(
 				-width / 2f, height / 2f, depth / 2f,
 				width / 2f, height / 2f, depth / 2f,
 				width / 2f, height / 2f, -depth / 2f,
