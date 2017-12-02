@@ -117,21 +117,55 @@ public class PaintCan extends Tool
 				min = Math.abs(u.distance(hit)) < Math.abs(min.distance(hit)) ? u : min;
 				
 				if(min == f)
-					side = 0;
+					side = Box.SIDE_FRONT;
 				else if(min == b)
-					side = 1;
+					side = Box.SIDE_BACK;
 				else if(min == l)
-					side = 2;
+					side = Box.SIDE_LEFT;
 				else if(min == r)
-					side = 3;
+					side = Box.SIDE_RIGHT;
 				else if(min == d)
-					side = 4;
+					side = Box.SIDE_BOTTOM;
 				else //if(min == u)
-					side = 5;
+					side = Box.SIDE_TOP;
 			}
-			else if(shape instanceof Capsule)
+			else if(shape instanceof Cylinder)
 			{
-				side = 0;
+				Cylinder cyl = (Cylinder) shape;
+				Vector3 pos = inst.getPosition(new Vector3());
+				Matrix4 transform = inst.getTransform(new Matrix4());
+				
+				//bottom
+				Vector3 dimD = cyl.getDimensions(new Vector3());
+				dimD.set(0, -dimD.y / 2f, 0).mul(transform);
+				Vector3 nor = new Vector3(0, -1, 0).mul(transform).sub(pos);
+				Plane d = new Plane(nor, dimD);
+				
+				//top
+				Vector3 dimU = cyl.getDimensions(new Vector3());
+				dimU.set(0, dimU.y / 2f, 0).mul(transform);
+				nor = nor.set(0, 1, 0).mul(transform).sub(pos);
+				Plane u = new Plane(nor, dimU);
+				
+				Plane min = Math.abs(d.distance(hit)) < Math.abs(u.distance(hit)) ? d : u;
+				
+				float pdst = Math.abs(min.distance(hit));
+				float rdst = Math.abs(pointToLineDst(hit, dimD, dimU) - (cyl.getDimensions(dimD).x / 2f)); //assumes uniform radius
+				
+				if(min == d)
+				{
+					if(pdst < rdst)
+						side = Cylinder.SIDE_BOTTOM;
+					else
+						side = Cylinder.SIDE_CYL;	
+				}
+				else
+				{
+					if(pdst < rdst)
+						side = Cylinder.SIDE_TOP;
+					else
+						side = Cylinder.SIDE_CYL;	
+				}
 			}
 			else
 			{
@@ -189,16 +223,28 @@ public class PaintCan extends Tool
 		return true;
 	}
 	
+	@Override
+	public void dispose()
+	{
+		crshair.dispose();
+		batch.dispose();
+	}
+	
 	private void setMat(ShapeInstance inst, int side)
 	{
 		editor.undoAdd(new PaintShape(inst, side, mat));
 		inst.setMaterial(side, mat);
 	}
 	
-	@Override
-	public void dispose()
+	//smallest perpendicular distance from a point to a line
+	//thx https://math.stackexchange.com/a/1905794
+	private float pointToLineDst(Vector3 point, Vector3 l1, Vector3 l2)
 	{
-		crshair.dispose();
-		batch.dispose();
+		Vector3 v1 = new Vector3(l2).sub(l1).scl(1f / l2.dst(l1));
+		Vector3 v2 = new Vector3(point).sub(l1);
+		
+		float t = v2.dot(v1);
+		v2.set(l1).add(v1.scl(t));
+		return v2.dst(point);
 	}
 }
