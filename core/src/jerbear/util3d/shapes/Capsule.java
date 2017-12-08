@@ -21,7 +21,7 @@ import jerbear.util3d.World;
 public class Capsule implements Shape
 {
 	public static final int SIDE_BOTTOM = 0;
-	public static final int SIDE_CYLINDER = 1;
+	public static final int SIDE_CAPSULE = 1;
 	public static final int SIDE_TOP = 2;
 	
 	private static Matrix4 tmpMat = new Matrix4();

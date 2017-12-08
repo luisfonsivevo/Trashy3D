@@ -34,8 +34,8 @@ import com.kotcrab.vis.ui.widget.file.FileTypeFilter;
 import jerbear.trashy.editor.tools.*;
 import jerbear.trashy.editor.tools.Grid.GridShape;
 import jerbear.trashy.loader.T3DFile;
+import jerbear.trashy.loader.AddShape;
 import jerbear.trashy.loader.Undoable;
-import jerbear.trashy.loader.Undoable.AddShape;
 import jerbear.util2d.dialog.Dialog;
 import jerbear.util2d.dialog.ExceptionDialog;
 import jerbear.util2d.dialog.YesNoDialog;
@@ -103,8 +103,7 @@ public class Editor extends ApplicationAdapter
 		PopupMenu menuToolsGridSub = new PopupMenu();
 		MenuItem menuToolsGridBox = new MenuItem("Box");
 		MenuItem menuToolsGridRamp = new MenuItem("Ramp");
-		MenuItem menuToolsGridWall = new MenuItem("Wall");
-		MenuItem menuToolsGridTri = new MenuItem("Triangle");
+		MenuItem menuToolsGridHull = new MenuItem("Hull");
 		MenuItem menuToolsGridSphere = new MenuItem("Sphere");
 		MenuItem menuToolsGridCylinder = new MenuItem("Cylinder");
 		MenuItem menuToolsGridCone = new MenuItem("Cone");
@@ -112,8 +111,7 @@ public class Editor extends ApplicationAdapter
 		MenuItem menuToolsPaint = new MenuItem("Paint Can");
 		menuToolsGridSub.addItem(menuToolsGridBox);
 		menuToolsGridSub.addItem(menuToolsGridRamp);
-		menuToolsGridSub.addItem(menuToolsGridWall);
-		menuToolsGridSub.addItem(menuToolsGridTri);
+		menuToolsGridSub.addItem(menuToolsGridHull);
 		menuToolsGridSub.addItem(menuToolsGridSphere);
 		menuToolsGridSub.addItem(menuToolsGridCylinder);
 		menuToolsGridSub.addItem(menuToolsGridCone);
@@ -242,23 +240,12 @@ public class Editor extends ApplicationAdapter
 			}
 		});
 		
-		menuToolsGridWall.addListener(new ChangeListener()
+		menuToolsGridHull.addListener(new ChangeListener()
 		{
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				grid.setShape(GridShape.WALL);
-				curTool = grid;
-				Gdx.input.setInputProcessor(curTool);
-			}
-		});
-		
-		menuToolsGridTri.addListener(new ChangeListener()
-		{
-			@Override
-			public void changed(ChangeEvent event, Actor actor)
-			{
-				grid.setShape(GridShape.TRIANGLE);
+				grid.setShape(GridShape.HULL);
 				curTool = grid;
 				Gdx.input.setInputProcessor(curTool);
 			}
@@ -323,7 +310,7 @@ public class Editor extends ApplicationAdapter
 			@Override
 			public void changed(ChangeEvent event, Actor actor)
 			{
-				popup(new ColorPicker(new ColorPickerAdapter()
+				ColorPicker picker = new ColorPicker(new ColorPickerAdapter()
 				{
 					@Override
 					public void finished(Color color)
@@ -341,7 +328,12 @@ public class Editor extends ApplicationAdapter
 						dialogOpen = false;
 						ignoreEscape = true;
 					}
-				}));
+				});
+				
+				if(paintCan.mat.has(ColorAttribute.Diffuse))
+					picker.setColor(((ColorAttribute) paintCan.mat.get(ColorAttribute.Diffuse)).color);
+				
+				popup(picker);
 			}
 		});
 		
@@ -401,6 +393,7 @@ public class Editor extends ApplicationAdapter
 	@Override
 	public void render()
 	{
+		//TODO dispose unused materials/shapes every 30 seconds
 		file.world.draw(Color.BLACK);
 		
 		boolean ctrl = Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);

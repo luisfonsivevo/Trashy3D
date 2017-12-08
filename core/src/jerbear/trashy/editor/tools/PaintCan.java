@@ -18,7 +18,7 @@ import com.badlogic.gdx.math.Plane;
 import com.badlogic.gdx.math.Vector3;
 
 import jerbear.trashy.editor.Editor;
-import jerbear.trashy.loader.Undoable.PaintShape;
+import jerbear.trashy.loader.PaintShape;
 import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
 import jerbear.util3d.shapes.*;
@@ -86,7 +86,6 @@ public class PaintCan extends Tool
 				
 				//back
 				dim.set(0, 0, -box.getDimensions(dim).z / 2f).mul(transform);
-				nor.set(0, 0, -1).mul(transform).sub(pos);
 				Plane b = new Plane(nor, dim);
 				
 				//left
@@ -96,7 +95,6 @@ public class PaintCan extends Tool
 				
 				//right
 				dim.set(box.getDimensions(dim).x / 2f, 0, 0).mul(transform);
-				nor.set(1, 0, 0).mul(transform).sub(pos);
 				Plane r = new Plane(nor, dim);
 				
 				//bottom
@@ -106,7 +104,6 @@ public class PaintCan extends Tool
 				
 				//top
 				dim.set(0, box.getDimensions(dim).y / 2f, 0).mul(transform);
-				nor.set(0, 1, 0).mul(transform).sub(pos);
 				Plane u = new Plane(nor, dim);
 				
 				Plane min;
@@ -129,6 +126,57 @@ public class PaintCan extends Tool
 				else //if(min == u)
 					side = Box.SIDE_TOP;
 			}
+			else if(shape instanceof Capsule)
+			{
+				Capsule cap = (Capsule) shape;
+				Vector3 dim = new Vector3();
+				Vector3 pos = inst.getPosition(new Vector3());
+				Matrix4 transform = inst.getTransform(new Matrix4());
+				
+				//bottom
+				dim.set(0, cap.getRadius() - (cap.getHeight() / 2f), 0).mul(transform);
+				Vector3 nor = new Vector3(0, -1, 0).mul(transform).sub(pos);
+				Plane d = new Plane(nor, dim);
+				
+				//top
+				dim.set(0, (cap.getHeight() / 2f) - cap.getRadius(), 0).mul(transform);
+				nor.set(0, 1, 0).mul(transform).sub(pos);
+				Plane u = new Plane(nor, dim);
+				
+				float dd = d.distance(hit);
+				float ud = u.distance(hit);
+				
+				if(dd > 0)
+					side = Capsule.SIDE_BOTTOM;
+				else if(ud > 0)
+					side = Capsule.SIDE_TOP;
+				else
+					side = Capsule.SIDE_CAPSULE;
+			}
+			else if(shape instanceof Cone)
+			{
+				Cone cone = (Cone) shape;
+				Vector3 pos = inst.getPosition(new Vector3());
+				Matrix4 transform = inst.getTransform(new Matrix4());
+				
+				//bottom
+				Vector3 dimD = new Vector3(0, -cone.getHeight() / 2f, 0).mul(transform);
+				Vector3 nor = new Vector3(0, -1, 0).mul(transform).sub(pos);
+				Plane b = new Plane(nor, dimD);
+				
+				//top (no plane on the tip)
+				Vector3 dimU = new Vector3(0, cone.getHeight() / 2f, 0).mul(transform);
+				
+				Vector3 ptl = pointToLine(hit, dimD, dimU);
+				
+				float pdst = Math.abs(b.distance(hit));
+				float rdst = Math.abs(ptl.dst(hit) - (cone.getRadius() - (ptl.dst(dimD) * cone.getRadius() / cone.getHeight())));
+				
+				if(pdst < rdst)
+					side = Cone.SIDE_BASE;
+				else
+					side = Cone.SIDE_CONE;
+			}
 			else if(shape instanceof Cylinder)
 			{
 				Cylinder cyl = (Cylinder) shape;
@@ -150,7 +198,7 @@ public class PaintCan extends Tool
 				Plane min = Math.abs(d.distance(hit)) < Math.abs(u.distance(hit)) ? d : u;
 				
 				float pdst = Math.abs(min.distance(hit));
-				float rdst = Math.abs(pointToLineDst(hit, dimD, dimU) - (cyl.getDimensions(dimD).x / 2f)); //assumes uniform radius
+				float rdst = Math.abs(pointToLine(hit, dimD, dimU).dst(hit) - (cyl.getDimensions(dimD).x / 2f)); //TODO assumes uniform radius
 				
 				if(min == d)
 				{
@@ -166,6 +214,55 @@ public class PaintCan extends Tool
 					else
 						side = Cylinder.SIDE_CYL;	
 				}
+			}
+			else if(shape instanceof Ramp)
+			{
+				Ramp ramp = (Ramp) shape;
+				Vector3 dim = new Vector3();
+				Vector3 pos = inst.getPosition(new Vector3());
+				Matrix4 transform = inst.getTransform(new Matrix4());
+				
+				//ramp
+				ramp.getDimensions(dim);
+				Vector3 dl =  new Vector3(-dim.x / 2f, -dim.y / 2f, dim.z / 2f).mul(transform);
+				Vector3 ul =  new Vector3(-dim.x / 2f, dim.y / 2f, -dim.z / 2f).mul(transform);
+				Vector3 dr =  new Vector3(dim.x / 2f, -dim.y / 2f, dim.z / 2f).mul(transform);
+				Vector3 nor = new Vector3(ul).sub(dl).crs(dr.sub(dl));
+				
+				Plane ra = new Plane(nor, dl);
+				
+				//back
+				nor.set(0, 0, -1).mul(transform).sub(pos);
+				Plane b = new Plane(nor, ul);
+				
+				//left
+				nor.set(-1, 0, 0).mul(transform).sub(pos);
+				Plane l = new Plane(nor, dl);
+				
+				//right
+				dim.set(ramp.getDimensions(dim).x / 2f, 0, 0).mul(transform);
+				Plane r = new Plane(nor, dim);
+				
+				//bottom
+				nor.set(0, -1, 0).mul(transform).sub(pos);
+				Plane d = new Plane(nor, dl);
+				
+				Plane min;
+				min = Math.abs(b.distance(hit)) < Math.abs(ra.distance(hit)) ? b : ra;
+				min = Math.abs(l.distance(hit)) < Math.abs(min.distance(hit)) ? l : min;
+				min = Math.abs(r.distance(hit)) < Math.abs(min.distance(hit)) ? r : min;
+				min = Math.abs(d.distance(hit)) < Math.abs(min.distance(hit)) ? d : min;
+				
+				if(min == ra)
+					side = Ramp.SIDE_RAMP;
+				else if(min == b)
+					side = Ramp.SIDE_BACK;
+				else if(min == l)
+					side = Ramp.SIDE_LEFT;
+				else if(min == r)
+					side = Ramp.SIDE_RIGHT;
+				else //if(min == d)
+					side = Ramp.SIDE_BOTTOM;
 			}
 			else
 			{
@@ -236,15 +333,14 @@ public class PaintCan extends Tool
 		inst.setMaterial(side, mat);
 	}
 	
-	//smallest perpendicular distance from a point to a line
+	//returns nearest point on a line from another point
 	//thx https://math.stackexchange.com/a/1905794
-	private float pointToLineDst(Vector3 point, Vector3 l1, Vector3 l2)
+	private Vector3 pointToLine(Vector3 point, Vector3 l1, Vector3 l2)
 	{
 		Vector3 v1 = new Vector3(l2).sub(l1).scl(1f / l2.dst(l1));
 		Vector3 v2 = new Vector3(point).sub(l1);
 		
 		float t = v2.dot(v1);
-		v2.set(l1).add(v1.scl(t));
-		return v2.dst(point);
+		return v2.set(l1).add(v1.scl(t));
 	}
 }

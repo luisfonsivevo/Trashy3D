@@ -16,7 +16,7 @@ import com.badlogic.gdx.physics.bullet.collision.btTriangleShape;
 
 import jerbear.util3d.World;
 
-//TODO make this "Polygon" not "Triangle"
+//TODO make this "Hull" not "Triangle"
 public class Triangle implements Shape
 {
 	public static final int SIDE_FRONT = 0;

@@ -9,6 +9,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Disposable;
 
 import jerbear.util3d.World;
@@ -72,13 +74,15 @@ public class T3DFile implements Disposable
 					break;
 				}
 				
+				FileHandle alternate = Gdx.files.absolute(file.getParent());
+				
 				switch(serialID)
 				{
 					case 0:
-						undo = new Undoable.AddShape(world, stream);
+						undo = new AddShape(world, stream);
 						break;
 					case 1:
-						undo = new Undoable.PaintShape(world, stream);
+						undo = new PaintShape(world, stream, alternate);
 						break;
 					default:
 						throw new IOException("Invalid serialization ID: " + serialID);

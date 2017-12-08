@@ -15,6 +15,8 @@ import jerbear.util3d.World;
 
 public class Sphere implements Shape
 {
+	public static final int SIDE_ALL = 0;
+	
 	private float radius;
 	private Model model;
 	private btSphereShape colShape;

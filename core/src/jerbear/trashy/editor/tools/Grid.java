@@ -14,16 +14,10 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.CollisionFlags;
 
 import jerbear.trashy.editor.Editor;
-import jerbear.trashy.loader.Undoable.AddShape;
+import jerbear.trashy.loader.AddShape;
 import jerbear.util3d.ShapeInstance;
 import jerbear.util3d.World;
-import jerbear.util3d.shapes.Box;
-import jerbear.util3d.shapes.Capsule;
-import jerbear.util3d.shapes.Cone;
-import jerbear.util3d.shapes.Cylinder;
-import jerbear.util3d.shapes.Rectangle;
-import jerbear.util3d.shapes.Sphere;
-import jerbear.util3d.shapes.Triangle;
+import jerbear.util3d.shapes.*;
 
 public class Grid extends Tool
 {
@@ -34,6 +28,7 @@ public class Grid extends Tool
 	
 	public int size;
 	public float zoom;
+	public final Vector3 offset = new Vector3();
 	
 	public Color color = Color.RED;
 	public boolean flipAxis;
@@ -54,15 +49,19 @@ public class Grid extends Tool
 	
 	public static enum GridShape
 	{
-		BOX, RAMP, WALL, TRIANGLE, SPHERE, CYLINDER, CONE, CAPSULE
+		BOX, RAMP, HULL, SPHERE, CYLINDER, CONE, CAPSULE
 	}
 	
 	public Grid(Editor editor, World world, int size, float zoom)
 	{
 		this.editor = editor;
 		this.world = world;
+		
 		this.size = size;
 		this.zoom = zoom;
+		
+		float offset = 0.5f - (size / 2f);
+		this.offset.set(offset, offset, offset);
 		
 		rend = new ShapeRenderer();
 	}
@@ -84,9 +83,8 @@ public class Grid extends Tool
 			{
 				for(float z = 0; z < size; z += zoom)
 				{
-					float offset = size / 2f - 0.5f;
 					Vector3 pos = cam.position;
-					tmp1.set(Math.round((x - offset + pos.x) * (1f / zoom)) * zoom, Math.round((y - offset + pos.y) * (1f / zoom)) * zoom, Math.round((z - offset + pos.z) * (1f / zoom)) * zoom);
+					tmp1.set(Math.round((x + pos.x) / zoom), Math.round((y + pos.y) / zoom), Math.round((z + pos.z) / zoom)).scl(zoom).add(offset);
 					
 					if(shape == GridShape.CYLINDER || shape == GridShape.CONE || shape == GridShape.CAPSULE)
 					{
@@ -107,6 +105,19 @@ public class Grid extends Tool
 								continue;
 						}
 					}
+					else if(shape == GridShape.RAMP && isSecond)
+					{
+						//only draw 8 corners
+						if(!(tmp1.equals(tmp2.set(first.x, first.y, first.z)) ||
+								tmp1.equals(tmp2.set(first.x, first.y, second.z)) ||
+								tmp1.equals(tmp2.set(first.x, second.y, first.z)) ||
+								tmp1.equals(tmp2.set(second.x, first.y, first.z)) ||
+								tmp1.equals(tmp2.set(second.x, second.y, second.z)) ||
+								tmp1.equals(tmp2.set(second.x, second.y, first.z)) ||
+								tmp1.equals(tmp2.set(second.x, first.y, second.z)) ||
+								tmp1.equals(tmp2.set(first.x, second.y, second.z))))
+							continue;
+					}
 					
 					Color shade;
 					if(isFirst && tmp1.equals(first))
@@ -121,7 +132,7 @@ public class Grid extends Tool
 					}
 					else
 					{
-						shade = new Color(0, 1 - (pos.dst(tmp1) / 2.5f / offset), 0, 1);
+						shade = new Color(0, 1 - (pos.dst(tmp1) / 2f / offset.len()), 0, 1);
 					}
 					
 					if(cam.frustum.pointInFrustum(tmp1))
@@ -184,7 +195,7 @@ public class Grid extends Tool
 		
 		rend.end();
 		
-		if((isSelected || ((shape == GridShape.CYLINDER || shape == GridShape.CONE || shape == GridShape.CAPSULE) && isFirst)) && isFirst)
+		if((isSelected || ((shape == GridShape.RAMP || shape == GridShape.CYLINDER || shape == GridShape.CONE || shape == GridShape.CAPSULE) && isFirst)) && isFirst)
 		{
 			rend.begin(ShapeType.Line);
 			rend.setColor(Color.YELLOW);
@@ -195,37 +206,70 @@ public class Grid extends Tool
 					rend.box(first.x, first.y, first.z, selected.x - first.x, selected.y - first.y, -selected.z + first.z);
 					break;
 				case RAMP:
-					if(facingAxis())
+					if((isFirst && isSelected) || isSecond)
 					{
-						rend.line(selected.x, selected.y, selected.z, first.x, selected.y, selected.z);
-						rend.line(first.x, selected.y, selected.z, first.x, first.y, first.z);
-						rend.line(first.x, first.y, first.z, selected.x, first.y, first.z);
-						rend.line(selected.x, first.y, first.z, selected.x, selected.y, selected.z);
+						if(facingAxis())
+						{
+							Vector3 other = isSecond ? second : selected;
+							rend.line(other.x, other.y, other.z, first.x, other.y, other.z);
+							rend.line(first.x, other.y, other.z, first.x, first.y, first.z);
+							rend.line(first.x, first.y, first.z, other.x, first.y, first.z);
+							rend.line(other.x, first.y, first.z, other.x, other.y, other.z);
+							
+							if(isSecond && isSelected)
+							{
+								if(selected.y == first.y)
+								{
+									rend.line(second.x, second.y, second.z, second.x, first.y, second.z);
+									rend.line(first.x, second.y, second.z, first.x, first.y, second.z);
+									rend.line(first.x, first.y, first.z, first.x, first.y, second.z);
+									rend.line(second.x, first.y, first.z, second.x, first.y, second.z);
+									rend.line(first.x, first.y, second.z, second.x, first.y, second.z);
+								}
+								else if(selected.y == second.y)
+								{
+									rend.line(first.x, first.y, first.z, first.x, second.y, first.z);
+									rend.line(second.x, first.y, first.z, second.x, second.y, first.z);
+									rend.line(second.x, second.y, second.z, second.x, second.y, first.z);
+									rend.line(first.x, second.y, second.z, first.x, second.y, first.z);
+									rend.line(first.x, second.y, first.z, second.x, second.y, first.z);
+								}
+							}
+						}
+						else
+						{
+							Vector3 other = isSecond ? second : selected;
+							rend.line(other.x, other.y, other.z, other.x, other.y, first.z);
+							rend.line(other.x, other.y, first.z, first.x, first.y, first.z);
+							rend.line(first.x, first.y, first.z, first.x, first.y, other.z);
+							rend.line(first.x, first.y, other.z, other.x, other.y, other.z);
+							
+							if(isSecond && isSelected)
+							{
+								if(selected.y == first.y)
+								{
+									rend.line(second.x, second.y, second.z, second.x, first.y, second.z);
+									rend.line(second.x, second.y, first.z, second.x, first.y, first.z);
+									rend.line(first.x, first.y, first.z, second.x, first.y, first.z);
+									rend.line(first.x, first.y, second.z, second.x, first.y, second.z);
+									rend.line(second.x, first.y, first.z, second.x, first.y, second.z);
+								}
+								else if(selected.y == second.y)
+								{
+									rend.line(first.x, first.y, first.z, first.x, second.y, first.z);
+									rend.line(first.x, first.y, second.z, first.x, second.y, second.z);
+									rend.line(second.x, second.y, second.z, first.x, second.y, second.z);
+									rend.line(second.x, second.y, first.z, first.x, second.y, first.z);
+									rend.line(first.x, second.y, first.z, first.x, second.y, second.z);
+								}
+							}
+						}
+						
+						if(!isSecond)
+							rend.line(first, selected);
 					}
-					else
-					{
-						rend.line(selected.x, selected.y, selected.z, selected.x, selected.y, first.z);
-						rend.line(selected.x, selected.y, first.z, first.x, first.y, first.z);
-						rend.line(first.x, first.y, first.z, first.x, first.y, selected.z);
-						rend.line(first.x, first.y, selected.z, selected.x, selected.y, selected.z);
-					}
-					
-					rend.line(first, selected);
 					break;
-				case WALL:
-					rend.line(first.x, first.y, first.z, selected.x, first.y, selected.z);
-					rend.line(selected.x, first.y, selected.z, selected.x, selected.y, selected.z);
-					rend.line(selected.x, selected.y, selected.z, first.x, selected.y, first.z);
-					rend.line(first.x, selected.y, first.z, first.x, first.y, first.z);
-					rend.line(first, selected);
-					break;
-				case TRIANGLE:
-					rend.line(first, selected);
-					if(isSecond)
-					{
-						rend.line(first, second);
-						rend.line(second, selected);
-					}
+				case HULL:
 					break;
 				case SPHERE:
 					float radiusLenSph = first.dst(selected);
@@ -396,13 +440,13 @@ public class Grid extends Tool
 						switch(shape)
 						{
 							case BOX:
-								float width = Math.abs(selected.x - first.x);
-								float height = Math.abs(selected.y - first.y);
-								float depth = Math.abs(selected.z - first.z);
+								float widthbox = Math.abs(selected.x - first.x);
+								float heightbox = Math.abs(selected.y - first.y);
+								float depthbox = Math.abs(selected.z - first.z);
 								
-								if(width * height * depth > 0)
+								if(widthbox * heightbox * depthbox > 0)
 								{
-									ShapeInstance box = world.addShape(new ShapeInstance(new Box(width, height, depth, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
+									ShapeInstance box = world.addShape(new ShapeInstance(new Box(widthbox, heightbox, depthbox, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
 									
 									editor.undoAdd(new AddShape(box));
 									resetPoints();
@@ -410,71 +454,45 @@ public class Grid extends Tool
 								
 								break;
 							case RAMP:
-								ShapeInstance ramp;
-								float lengthramp, pyth;
-								
-								if(facingAxis())
-								{
-									lengthramp = Math.abs(selected.x - first.x);
-									pyth = (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.z - first.z) * (selected.z - first.z));
-									
-									if(lengthramp > 0 && pyth > 0)
-									{
-										ramp = world.addShape(new ShapeInstance(new Rectangle(lengthramp, pyth, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
-										ramp.setTransform(ramp.getTransform(tmpM).rotateRad(-1, 0, 0, (float) Math.atan2(selected.y - first.y, selected.z - first.z)));
-										
-										editor.undoAdd(new AddShape(ramp));
-										resetPoints();
-									}
-								}
-								else
-								{
-									lengthramp = Math.abs(selected.z - first.z);
-									pyth = (float) Math.sqrt((selected.y - first.y) * (selected.y - first.y) + (selected.x - first.x) * (selected.x - first.x));
-									
-									if(lengthramp > 0 && pyth > 0)
-									{
-										ramp = world.addShape(new ShapeInstance(new Rectangle(pyth, lengthramp, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
-										ramp.setTransform(ramp.getTransform(tmpM).rotateRad(0, 0, 1, (float) Math.atan2(selected.y - first.y, selected.x - first.x)));
-										
-										editor.undoAdd(new AddShape(ramp));
-										resetPoints();
-									}
-								}
-								
-								break;
-							case WALL:
-								float lengthwall = Vector3.dst(first.x, first.y, first.z, selected.x, first.y, selected.z);
-								float heightwall = Math.abs(selected.y - first.y);
-								
-								if(lengthwall > 0 && heightwall > 0)
-								{
-									ShapeInstance wall = world.addShape(new ShapeInstance(new Rectangle(lengthwall, heightwall, color).disposeByWorld(world), (selected.x + first.x) / 2f, (selected.y + first.y) / 2f, (selected.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
-									wall.setTransform(wall.getTransform(tmpM).rotate(Vector3.X, 90).rotateRad(Vector3.Z, (float) Math.atan2(selected.z - first.z, selected.x - first.x)));
-									
-									editor.undoAdd(new AddShape(wall));
-									resetPoints();
-								}
-								
-								resetPoints();
-								break;
-							case TRIANGLE:
-								if(!isSecond)
+								if(!isSecond && selected.x != first.x && selected.y != first.y && selected.z != first.z)
 								{
 									second.set(selected);
 									isSecond = true;
 								}
-								else
+								else if(isSecond)
 								{
-									if(!second.equals(selected))
+									float widthramp = Math.abs(second.x - first.x);
+									float heightramp = Math.abs(second.y - first.y);
+									float depthramp = Math.abs(second.z - first.z);
+								
+									if(widthramp * heightramp * depthramp > 0)
 									{
-										tmp1.set(first).add(second).add(selected).scl(1 / 3f); //offset by the centroid to give the triangle a center of rotation
-										ShapeInstance tri = world.addShape(new ShapeInstance(new Triangle(first.sub(tmp1), second.sub(tmp1), selected.sub(tmp1), color).disposeByWorld(world), tmp1, CollisionFlags.CF_STATIC_OBJECT, 0));
+										ShapeInstance ramp;
+										if(facingAxis())
+										{
+											ramp = world.addShape(new ShapeInstance(new Ramp(widthramp, heightramp, depthramp, color).disposeByWorld(world), (second.x + first.x) / 2f, (second.y + first.y) / 2f, (second.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
+											if((first.z < second.z && second.y > first.y) || (second.z < first.z && first.y > second.y))
+												ramp.setTransform(ramp.getTransform(tmpM).rotate(Vector3.Y, 180));
+										}
+										else
+										{
+											ramp = world.addShape(new ShapeInstance(new Ramp(depthramp, heightramp, widthramp, color).disposeByWorld(world), (second.x + first.x) / 2f, (second.y + first.y) / 2f, (second.z + first.z) / 2f, CollisionFlags.CF_STATIC_OBJECT, 0));
+											if((first.x < second.x && second.y > first.y) || (second.x < first.x && first.y > second.y))
+												ramp.setTransform(ramp.getTransform(tmpM).rotate(Vector3.Y, -90));
+											else
+												ramp.setTransform(ramp.getTransform(tmpM).rotate(Vector3.Y, 90));
+										}
 										
-										editor.undoAdd(new AddShape(tri));
+										if((first.y < second.y && second.y == selected.y) || (second.y < first.y && first.y == selected.y))
+											ramp.setTransform(ramp.getTransform(tmpM).rotate(Vector3.X, 180));
+										
+										editor.undoAdd(new AddShape(ramp));
 										resetPoints();
 									}
 								}
+								
+								break;
+							case HULL:
 								break;
 							case SPHERE:
 								float radiussphere = first.dst(selected);
@@ -560,7 +578,7 @@ public class Grid extends Tool
 				}
 				break;
 			case Buttons.RIGHT:
-				//TODO only undo one point
+				//TODO only undo one point - useful for hulls
 				resetPoints();
 				break;
 		}
@@ -571,8 +589,54 @@ public class Grid extends Tool
 	@Override
 	public boolean keyDown(int keycode)
 	{
-		if(keycode == Keys.Q)
-			flipAxis = !flipAxis;
+		switch(keycode)
+		{
+			case Keys.Q:
+				flipAxis = !flipAxis;
+				break;
+			case Keys.LEFT:
+				int ldir = facingAxisDir();
+				switch(ldir)
+				{
+					case 0:
+						offset.z -= zoom / 4f;
+						break;
+					case 1:
+						offset.x -= zoom / 4f;
+						break;
+					case 2:
+						offset.z += zoom / 4f;
+						break;
+					case 3:
+						offset.x += zoom / 4f;
+						break;
+				}
+				break;
+			case Keys.RIGHT:
+				int rdir = facingAxisDir();
+				switch(rdir)
+				{
+					case 0:
+						offset.z += zoom / 4f;
+						break;
+					case 1:
+						offset.x += zoom / 4f;
+						break;
+					case 2:
+						offset.z -= zoom / 4f;
+						break;
+					case 3:
+						offset.x -= zoom / 4f;
+						break;
+				}
+				break;
+			case Keys.UP:
+				offset.y += zoom / 4f;
+				break;
+			case Keys.DOWN:
+				offset.y -= zoom / 4f;
+				break;
+		}
 		
 		return true;
 	}
@@ -617,9 +681,25 @@ public class Grid extends Tool
 	private boolean facingAxis()
 	{
 		float dir = (float) (MathUtils.radDeg * Math.atan2(-world.player.getCamera().direction.z, world.player.getCamera().direction.x));
+		return ((dir > 45 && dir < 135) || (dir > -135 && dir < -45)) ^ flipAxis;
+	}
+	
+	//0 = +x, 1 = -z, 2 = -x, 3 = +z
+	private int facingAxisDir()
+	{
+		float dir = (float) (MathUtils.radDeg * Math.atan2(-world.player.getCamera().direction.z, world.player.getCamera().direction.x));
 		if(dir < 0) dir += 360;
 		
-		return ((dir > 45 && dir < 135) || (dir > 225 && dir < 315)) ^ flipAxis;
+		if(dir < 45 || dir > 315)
+			return 0;
+		else if(dir > 45 && dir < 135)
+			return 1;
+		else if(dir > 135 && dir < 225)
+			return 2;
+		else if(dir > 225 && dir < 315)
+			return 3;
+		else
+			return 69; //help
 	}
 	
 	private void renderBox(Vector3 pos)
